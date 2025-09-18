@@ -120,7 +120,7 @@ const handleProfileClick = () => {
 
 .brand {
   font-weight: 700;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-family: 'Poppins', sans-serif;
 }
 
@@ -128,6 +128,8 @@ const handleProfileClick = () => {
   display: flex;
   gap: 1.5rem;
   list-style: none;
+  font-size: 1.1rem;
+
 }
 
 .nav-links a {
