@@ -1,12 +1,11 @@
 <template>
   <nav class="navbar" aria-label="Barra de navegación">
-
     <button class="icon-btn hamburger" @click="toggleMenu" v-if="isMobile" aria-label="Abrir menú">
       <img src="@/assets/icons/menu.png" alt="" class="icon" />
     </button>
 
     <RouterLink to="/" class="logo">
-      <img src="@/assets/icons/menu.png" alt="MiMesaYa" />
+      <img src="@/assets/Logo/LogoSin.png" alt="MiMesaYa" />
       <span class="brand">MiMesaYa</span>
     </RouterLink>
 
@@ -21,56 +20,66 @@
       <li>
         <RouterLink to="/contacto" class="nav-link" exact-active-class="is-active">Contacto</RouterLink>
       </li>
-      <li v-if="auth.isAdmin" class="divider"></li>
-      <li v-if="auth.isAdmin">
+      <li v-if="authStore.isAdmin" class="divider"></li>
+      <li v-if="authStore.isAdmin">
         <RouterLink to="/admin/mesas" class="nav-link" exact-active-class="is-active">Gestionar Mesas</RouterLink>
       </li>
-      <li v-if="auth.isAdmin">
+      <li v-if="authStore.isAdmin">
         <RouterLink to="/admin/reservas" class="nav-link" exact-active-class="is-active">Gestionar Reservas</RouterLink>
       </li>
-      <li v-if="auth.isAdmin">
+      <li v-if="authStore.isAdmin">
         <RouterLink to="/admin/clientes" class="nav-link" exact-active-class="is-active">Gestionar Clientes</RouterLink>
       </li>
     </ul>
 
     <!-- Right -->
     <div class="right">
-      <button class="icon-btn profile" @click="handleProfileClick" aria-label="Perfil">
+      <button class="icon-btn profile" @click="handleProfileClick" aria-label="Perfil o Login">
         <img src="@/assets/icons/User.png" alt="" class="icon" />
       </button>
+      <!-- Mini-modal de perfil (para autenticados) -->
+      <transition name="fade">
+        <div v-if="showProfileMenu && authStore.isAuthenticated" class="profile-menu">
+          <ul class="profile-options">
+            <li v-if="authStore.isCliente">
+              <RouterLink to="/perfil" @click="closeProfileMenu">Perfil</RouterLink>
+            </li>
+            <li>
+              <a href="#" @click.prevent="logout">Cerrar Sesión</a>
+            </li>
+          </ul>
+        </div>
+      </transition>
     </div>
   </nav>
 
   <!-- Sidebar -->
   <transition name="slide">
     <aside v-if="isMobile && menuOpen" class="sidebar">
-      <button class="icon-btn close" @click="toggleMenu">
-        <img src="@/assets/icons/close.png" alt="cerrar" class="icon" />
-      </button>
+      <div class="sidebar-header">
+        <button class="icon-btn close" @click="toggleMenu" aria-label="Cerrar menú">
+          <img src="@/assets/icons/close.png" alt="cerrar" class="icon" />
+        </button>
+      </div>
       <ul class="side-links">
         <li>
           <RouterLink to="/" class="side-link" exact-active-class="is-active" @click="closeMenu">Inicio</RouterLink>
         </li>
         <li>
-          <RouterLink to="/reservas" class="side-link" exact-active-class="is-active" @click="closeMenu">Reservar
-          </RouterLink>
+          <RouterLink to="/reservas" class="side-link" exact-active-class="is-active" @click="closeMenu">Reservar</RouterLink>
         </li>
         <li>
-          <RouterLink to="/contacto" class="side-link" exact-active-class="is-active" @click="closeMenu">Contacto
-          </RouterLink>
+          <RouterLink to="/contacto" class="side-link" exact-active-class="is-active" @click="closeMenu">Contacto</RouterLink>
         </li>
-        <li v-if="auth.isAdmin" class="side-divider"></li>
-        <li v-if="auth.isAdmin">
-          <RouterLink to="/admin/mesas" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar
-            Mesas</RouterLink>
+        <li v-if="authStore.isAdmin" class="side-divider"></li>
+        <li v-if="authStore.isAdmin">
+          <RouterLink to="/admin/mesas" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar Mesas</RouterLink>
         </li>
-        <li v-if="auth.isAdmin">
-          <RouterLink to="/admin/reservas" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar
-            Reservas</RouterLink>
+        <li v-if="authStore.isAdmin">
+          <RouterLink to="/admin/reservas" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar Reservas</RouterLink>
         </li>
-        <li v-if="auth.isAdmin">
-          <RouterLink to="/admin/clientes" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar
-            Clientes</RouterLink>
+        <li v-if="authStore.isAdmin">
+          <RouterLink to="/admin/clientes" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar Clientes</RouterLink>
         </li>
       </ul>
     </aside>
@@ -79,21 +88,41 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-const auth = ref({ isLoggedIn: false, isAdmin: true })
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth' // Asegúrate de ajustar la ruta según tu estructura
+
+const router = useRouter()
+const authStore = useAuthStore() // Usa el store de Pinia
 const isMobile = ref(false)
 const menuOpen = ref(false)
+const showProfileMenu = ref(false)
+
 function checkMobile() { isMobile.value = window.innerWidth <= 900 }
 onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile) })
 onUnmounted(() => window.removeEventListener('resize', checkMobile))
+
 function toggleMenu() { menuOpen.value = !menuOpen.value }
 function closeMenu() { menuOpen.value = false }
+function closeProfileMenu() { showProfileMenu.value = false }
+
 function handleProfileClick() {
-  if (!auth.value.isLoggedIn) window.location.href = '/login'
-  else alert('Abrir menú de perfil aquí')
+  if (!authStore.isAuthenticated) {
+    window.location.href = '/login'
+  } else {
+    showProfileMenu.value = !showProfileMenu.value
+  }
+}
+
+function logout() {
+  authStore.logout() // Llama al método del store
+  closeProfileMenu()
+  router.push('/login') // Redirige a /login después de cerrar sesión
+  console.log('Sesión cerrada, redirigiendo a /login')
 }
 </script>
 
 <style scoped>
+/* [Los estilos permanecen iguales, no se modifican] */
 .navbar {
   position: sticky;
   top: 0;
@@ -103,14 +132,14 @@ function handleProfileClick() {
   align-items: center;
   width: 100%;
   background: var(--color-blanco);
-  padding: .8rem 1.2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+  padding: 0.8rem 1.2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
   text-decoration: none;
   color: var(--color-oscuro);
 }
@@ -139,7 +168,7 @@ function handleProfileClick() {
   font-weight: 600;
   font-size: 1.15rem;
   position: relative;
-  padding: .4rem 0;
+  padding: 0.4rem 0;
 }
 
 .nav-link.is-active::after {
@@ -161,8 +190,9 @@ function handleProfileClick() {
 
 .right {
   display: flex;
-  gap: .5rem;
+  gap: 0.5rem;
   align-items: center;
+  position: relative;
 }
 
 .icon-btn {
@@ -176,8 +206,55 @@ function handleProfileClick() {
   height: 40px;
 }
 
+/* Mini-modal de perfil */
+.profile-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--color-blanco);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  z-index: 1000;
+  min-width: 150px;
+}
+
+.profile-options {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.profile-options li {
+  padding: 0.5rem 1rem;
+}
+
+.profile-options a {
+  text-decoration: none;
+  color: var(--color-oscuro);
+  font-size: 1rem;
+  font-weight: 500;
+  display: block;
+}
+
+.profile-options a:hover {
+  background-color: var(--color-info-luz);
+  border-radius: 4px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* Sidebar móvil */
-@media (max-width:900px) {
+@media (max-width: 900px) {
   .nav-links {
     display: none;
   }
@@ -188,8 +265,20 @@ function handleProfileClick() {
   inset: 0 40% 0 0;
   background: var(--color-blanco);
   padding: 1rem;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, .2);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.close {
+  order: 1;
 }
 
 .side-links {
@@ -198,7 +287,7 @@ function handleProfileClick() {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: 1rem;
 }
 
 .side-link {
@@ -206,7 +295,7 @@ function handleProfileClick() {
   color: var(--color-oscuro);
   font-size: 1.1rem;
   font-weight: 600;
-  padding: .6rem 0;
+  padding: 0.8rem 1rem;
 }
 
 .side-link.is-active {
@@ -216,12 +305,12 @@ function handleProfileClick() {
 .side-divider {
   height: 1px;
   background: var(--color-info-luz);
-  margin: .6rem 0;
+  margin: 0.6rem 0;
 }
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform .3s ease;
+  transition: transform 0.3s ease;
 }
 
 .slide-enter-from,

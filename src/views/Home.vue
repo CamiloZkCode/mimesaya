@@ -110,11 +110,12 @@ const description =
 /** ---------- CARRUSEL ---------- */
 type Slide = { src: string; alt: string }
 const images = reactive<Slide[]>([
-  { src: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1600&auto=format&fit=crop', alt: 'Salón principal iluminado' },
-  { src: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1600&auto=format&fit=crop', alt: 'Terraza al atardecer' },
-  { src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop', alt: 'Barra con coctelería' }
+  { src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=870&auto=format&fit=crop', alt: 'Barra iluminada' },
+  { src: 'https://images.unsplash.com/photo-1667388969250-1c7220bf3f37?q=80&w=910&auto=format&fit=crop', alt: 'Salón principal' },
+  { src: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=870&auto=format&fit=crop', alt: 'Barra con coctelería' },
+  { src: 'https://images.unsplash.com/photo-1521917441209-e886f0404a7b?q=80&w=1160&auto=format&fit=crop', alt: 'Barra con coctelería' }
 
-])
+  ])
 
 const current = ref(0)
 const DURATION = 5500
@@ -191,7 +192,7 @@ const places = reactive<Place[]>([
     key: 'barra',
     title: 'Barra',
     desc: 'Coctelería de autor y energía alta. Ideal para parejas o grupos pequeños.',
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1400&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1543007631-283050bb3e8c?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     capacity: '2–4',
     features: ['Cocteles', 'Alta energía'],
     badge: 'Popular'
@@ -200,7 +201,7 @@ const places = reactive<Place[]>([
     key: 'terraza',
     title: 'Terraza',
     desc: 'Aire libre con vegetación y luces cálidas. Perfecta para el atardecer.',
-    image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1400&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1665758564776-f2aa6b41327e?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     capacity: '2–6',
     features: ['Al aire libre'],
     badge: 'Al aire libre'
@@ -209,7 +210,7 @@ const places = reactive<Place[]>([
     key: 'salon',
     title: 'Salón',
     desc: 'Ambiente cómodo y climatizado con acústica pensada para conversar.',
-    image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1400&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1560053608-13721e0d69e8?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     capacity: '2–8',
     features: ['Climatizado'],
     badge: 'Cómodo'
@@ -218,7 +219,7 @@ const places = reactive<Place[]>([
     key: 'privado',
     title: 'Privado',
     desc: 'Espacio íntimo para celebraciones o reuniones ejecutivas.',
-    image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1400&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1645640931580-b4909b189b2f?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     capacity: '6–12',
     features: ['Privacidad'],
     badge: 'Íntimo'

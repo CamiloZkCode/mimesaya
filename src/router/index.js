@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from '@/store/auth'
 
 // Layouts
 import LayoutConFooter from "@/layouts/LayoutConFooter.vue";
@@ -9,7 +10,6 @@ import Home from "@/views/Home.vue";
 import Reservas from "@/views/Reservas.vue";
 import Contacto from "@/views/Contacto.vue";
 import Login from "@/views/Login.vue";
-import Registro from "@/views/Registro.vue";
 
 // Cliente
 import Perfil from "@/views/Cliente/Perfil.vue";
@@ -20,32 +20,40 @@ import GestionarMesas from "@/views/Administrador/GestorMesas.vue";
 import GestionarClientes from "@/views/Administrador/GestorClientes.vue";
 
 const routes = [
-  // 👥 Rutas públicas y de cliente (con footer)
+  // 🌐 Rutas públicas (cualquiera puede ver)
   {
     path: "/",
     component: LayoutConFooter,
     children: [
       { path: "", name: "Home", component: Home },
       { path: "reservas", name: "Reservas", component: Reservas },
-      { path: "contacto", name: "Contacto", component: Contacto },
-      { path: "perfil", name: "Perfil", component: Perfil },
+      { path: "contacto", name: "Contacto", component: Contacto }
     ],
   },
 
-  // 🔑 Login y Registro (sin footer)
+  // 👤 Cliente autenticado
+  {
+    path: "/perfil",
+    component: LayoutConFooter,
+    children: [
+      { path: "", name: "Perfil", component: Perfil, meta: { requiereAuth: true, rol: "cliente" } },
+    ],
+  },
+
+  // 🔑 Login (sin footer)
   {
     path: "/",
     component: LayoutSinFooter,
     children: [
       { path: "login", name: "Login", component: Login },
-      { path: "registro", name: "Registro", component: Registro },
     ],
   },
 
-  // ⚙️ Administración (sin footer)
+  // ⚙️ Administración
   {
     path: "/admin",
     component: LayoutSinFooter,
+    meta: { requiereAuth: true, rol: "administrador" },
     children: [
       { path: "reservas", name: "GestionarReservas", component: GestionarReservas },
       { path: "mesas", name: "GestionarMesas", component: GestionarMesas },
@@ -53,7 +61,7 @@ const routes = [
     ],
   },
 
-  // 🚨 Fallback para rutas inexistentes
+  // 🚨 Fallback
   { path: "/:pathMatch(.*)*", redirect: "/" },
 ];
 
@@ -62,4 +70,27 @@ const router = createRouter({
   routes,
 });
 
-export default router;
+// ✅ Guards
+router.beforeEach((to, from, next) => {
+  const auth = useAuthStore()
+
+  // ⛔ Bloquear acceso a login si ya está autenticado
+  if (to.name === 'Login' && auth.isAuthenticated) {
+    if (auth.isAdmin) return next('/admin/mesas')
+    return next('/inicio')
+  }
+
+  // 🔒 Rutas que requieren autenticación
+  if (to.meta.requiereAuth) {
+    if (!auth.isAuthenticated) return next('/login')
+
+    // 👮 Validar rol si la ruta lo pide
+    if (to.meta.rol && auth.user?.rol?.toLowerCase() !== to.meta.rol) {
+      return next('/') // redirige a Home si no tiene permisos
+    }
+  }
+
+  next()
+})
+
+export default router
