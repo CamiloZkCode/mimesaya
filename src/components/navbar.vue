@@ -1,6 +1,11 @@
 <template>
   <nav class="navbar" aria-label="Barra de navegación">
-    <button class="icon-btn hamburger" @click="toggleMenu" v-if="isMobile" aria-label="Abrir menú">
+    <button
+      class="icon-btn hamburger"
+      @click="toggleMenu"
+      v-if="isMobile"
+      aria-label="Abrir menú"
+    >
       <img src="@/assets/icons/menu.png" alt="" class="icon" />
     </button>
 
@@ -12,38 +17,84 @@
     <!-- Desktop -->
     <ul class="nav-links" v-if="!isMobile">
       <li>
-        <RouterLink to="/" class="nav-link" exact-active-class="is-active">Inicio</RouterLink>
+        <RouterLink to="/" class="nav-link" exact-active-class="is-active"
+          >Inicio</RouterLink
+        >
       </li>
       <li>
-        <RouterLink to="/reservas" class="nav-link" exact-active-class="is-active">Reservar</RouterLink>
+        <RouterLink
+          to="/reservas"
+          class="nav-link"
+          exact-active-class="is-active"
+          >Reservar</RouterLink
+        >
       </li>
       <li>
-        <RouterLink to="/contacto" class="nav-link" exact-active-class="is-active">Contacto</RouterLink>
+        <RouterLink
+          to="/contacto"
+          class="nav-link"
+          exact-active-class="is-active"
+          >Contacto</RouterLink
+        >
       </li>
       <li v-if="authStore.isAdmin" class="divider"></li>
       <li v-if="authStore.isAdmin">
-        <RouterLink to="/admin/mesas" class="nav-link" exact-active-class="is-active">Gestionar Mesas</RouterLink>
+        <RouterLink
+          to="/admin/mesas"
+          class="nav-link"
+          exact-active-class="is-active"
+          >Gestionar Mesas</RouterLink
+        >
       </li>
       <li v-if="authStore.isAdmin">
-        <RouterLink to="/admin/reservas" class="nav-link" exact-active-class="is-active">Gestionar Reservas</RouterLink>
+        <RouterLink
+          to="/admin/reservas"
+          class="nav-link"
+          exact-active-class="is-active"
+          >Gestionar Reservas</RouterLink
+        >
       </li>
       <li v-if="authStore.isAdmin">
-        <RouterLink to="/admin/clientes" class="nav-link" exact-active-class="is-active">Gestionar Clientes</RouterLink>
+        <RouterLink
+          to="/admin/clientes"
+          class="nav-link"
+          exact-active-class="is-active"
+          >Gestionar Clientes</RouterLink
+        >
       </li>
     </ul>
 
     <!-- Right -->
     <div class="right">
-      <button class="icon-btn profile" @click="handleProfileClick" aria-label="Perfil o Login">
+      <button
+        class="icon-btn profile"
+        @click="handleProfileClick"
+        aria-label="Perfil o Login"
+      >
         <img src="@/assets/icons/User.png" alt="" class="icon" />
       </button>
       <!-- Mini-modal de perfil (para autenticados) -->
       <transition name="fade">
-        <div v-if="showProfileMenu && authStore.isAuthenticated" class="profile-menu">
+        <div
+          v-if="showProfileMenu && authStore.isAuthenticated"
+          class="profile-menu"
+        >
           <ul class="profile-options">
+            <!-- Perfil de cliente -->
             <li v-if="authStore.isCliente">
-              <RouterLink to="/perfil" @click="closeProfileMenu">Perfil</RouterLink>
+              <RouterLink to="/perfil" @click="closeProfileMenu">
+                Perfil
+              </RouterLink>
             </li>
+
+            <!-- Perfil de administrador -->
+            <li v-if="authStore.isAdmin">
+              <RouterLink to="/admin/perfil" @click="closeProfileMenu">
+                Perfil Administrador
+              </RouterLink>
+            </li>
+
+            <!-- Cerrar sesión -->
             <li>
               <a href="#" @click.prevent="logout">Cerrar Sesión</a>
             </li>
@@ -57,29 +108,69 @@
   <transition name="slide">
     <aside v-if="isMobile && menuOpen" class="sidebar">
       <div class="sidebar-header">
-        <button class="icon-btn close" @click="toggleMenu" aria-label="Cerrar menú">
+        <button
+          class="icon-btn close"
+          @click="toggleMenu"
+          aria-label="Cerrar menú"
+        >
           <img src="@/assets/icons/close.png" alt="cerrar" class="icon" />
         </button>
       </div>
       <ul class="side-links">
         <li>
-          <RouterLink to="/" class="side-link" exact-active-class="is-active" @click="closeMenu">Inicio</RouterLink>
+          <RouterLink
+            to="/"
+            class="side-link"
+            exact-active-class="is-active"
+            @click="closeMenu"
+            >Inicio</RouterLink
+          >
         </li>
         <li>
-          <RouterLink to="/reservas" class="side-link" exact-active-class="is-active" @click="closeMenu">Reservar</RouterLink>
+          <RouterLink
+            to="/reservas"
+            class="side-link"
+            exact-active-class="is-active"
+            @click="closeMenu"
+            >Reservar</RouterLink
+          >
         </li>
         <li>
-          <RouterLink to="/contacto" class="side-link" exact-active-class="is-active" @click="closeMenu">Contacto</RouterLink>
+          <RouterLink
+            to="/contacto"
+            class="side-link"
+            exact-active-class="is-active"
+            @click="closeMenu"
+            >Contacto</RouterLink
+          >
         </li>
         <li v-if="authStore.isAdmin" class="side-divider"></li>
         <li v-if="authStore.isAdmin">
-          <RouterLink to="/admin/mesas" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar Mesas</RouterLink>
+          <RouterLink
+            to="/admin/mesas"
+            class="side-link"
+            exact-active-class="is-active"
+            @click="closeMenu"
+            >Gestionar Mesas</RouterLink
+          >
         </li>
         <li v-if="authStore.isAdmin">
-          <RouterLink to="/admin/reservas" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar Reservas</RouterLink>
+          <RouterLink
+            to="/admin/reservas"
+            class="side-link"
+            exact-active-class="is-active"
+            @click="closeMenu"
+            >Gestionar Reservas</RouterLink
+          >
         </li>
         <li v-if="authStore.isAdmin">
-          <RouterLink to="/admin/clientes" class="side-link" exact-active-class="is-active" @click="closeMenu">Gestionar Clientes</RouterLink>
+          <RouterLink
+            to="/admin/clientes"
+            class="side-link"
+            exact-active-class="is-active"
+            @click="closeMenu"
+            >Gestionar Clientes</RouterLink
+          >
         </li>
       </ul>
     </aside>
@@ -87,42 +178,51 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/store/auth' // Asegúrate de ajustar la ruta según tu estructura
+import { ref, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/store/auth";
 
-const router = useRouter()
-const authStore = useAuthStore() // Usa el store de Pinia
-const isMobile = ref(false)
-const menuOpen = ref(false)
-const showProfileMenu = ref(false)
+const router = useRouter();
+const authStore = useAuthStore();
+const isMobile = ref(false);
+const menuOpen = ref(false);
+const showProfileMenu = ref(false);
 
-function checkMobile() { isMobile.value = window.innerWidth <= 900 }
-onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile) })
-onUnmounted(() => window.removeEventListener('resize', checkMobile))
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 900;
+}
+onMounted(() => {
+  checkMobile();
+  window.addEventListener("resize", checkMobile);
+});
+onUnmounted(() => window.removeEventListener("resize", checkMobile));
 
-function toggleMenu() { menuOpen.value = !menuOpen.value }
-function closeMenu() { menuOpen.value = false }
-function closeProfileMenu() { showProfileMenu.value = false }
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value;
+}
+function closeMenu() {
+  menuOpen.value = false;
+}
+function closeProfileMenu() {
+  showProfileMenu.value = false;
+}
 
 function handleProfileClick() {
   if (!authStore.isAuthenticated) {
-    window.location.href = '/login'
+    router.push("/login");
   } else {
-    showProfileMenu.value = !showProfileMenu.value
+    showProfileMenu.value = !showProfileMenu.value;
   }
 }
 
 function logout() {
-  authStore.logout() // Llama al método del store
-  closeProfileMenu()
-  router.push('/login') // Redirige a /login después de cerrar sesión
-  console.log('Sesión cerrada, redirigiendo a /login')
+  authStore.logout();
+  closeProfileMenu();
+  router.push("/login");
 }
 </script>
 
 <style scoped>
-/* [Los estilos permanecen iguales, no se modifican] */
 .navbar {
   position: sticky;
   top: 0;
@@ -132,7 +232,7 @@ function logout() {
   align-items: center;
   width: 100%;
   background: var(--color-blanco);
-  padding: 0.8rem 1.2rem;
+  padding: 0.5rem 1.2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -178,7 +278,11 @@ function logout() {
   right: 0;
   bottom: -6px;
   height: 3px;
-  background: linear-gradient(135deg, var(--color-azul-1), var(--color-primary-variant));
+  background: linear-gradient(
+    135deg,
+    var(--color-azul-1),
+    var(--color-primary-variant)
+  );
   border-radius: 999px;
 }
 

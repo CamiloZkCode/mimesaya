@@ -18,7 +18,7 @@
                 placeholder="********" required />
               <span class="material-symbols-outlined toggle-password" @click="toggleLoginPassword"
                 :aria-label="showLoginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showLoginPassword ?
-                'lock_open' : 'lock' }}</span>
+                  'lock_open' : 'lock' }}</span>
             </div>
           </div>
           <button type="submit" class="btn btn--primary">Iniciar Sesión</button>
@@ -80,7 +80,7 @@
                 id="confirmPassword" placeholder="********" required />
               <span class="material-symbols-outlined toggle-password" @click="toggleConfirmPassword"
                 :aria-label="showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showConfirmPassword ?
-                'lock_open' : 'lock' }}</span>
+                  'lock_open' : 'lock' }}</span>
             </div>
           </div>
 
@@ -90,18 +90,24 @@
 
       <!-- Paneles de toggle -->
       <div class="toggle-box">
+
         <div class="toggle-panel toggle-left">
           <h1>¡Bienvenido a MiMesaYa!</h1>
           <img src="@/assets/Logo/LogoCon.png" alt="MiMesaYa" />
           <p>No tienes una cuenta aun ?</p>
-          <button class="btn registrar" @click="activarRegistro">Registrarse</button>
+          <div class="btn-group">
+            <button class="btn registrar" @click="activarRegistro">Cliente</button>
+            <RouterLink to="/registrar-restaurante" class="btn emprendedor"> Emprendedor</RouterLink>
+          </div>
         </div>
+
         <div class="toggle-panel toggle-right">
           <h1>¡Bienvenido a MiMesaYa!</h1>
           <img src="@/assets/Logo/LogoConLetra.jpg" alt="MiMesaYa" />
           <p>Ya tienes cuenta, inicia sesion</p>
           <button class="btn iniciar" @click="activarLogin">Iniciar</button>
         </div>
+
       </div>
     </div>
   </main>
@@ -267,13 +273,16 @@ form {
 }
 
 input[type="number"] {
-  appearance: textfield; /* Standard */
-  -moz-appearance: textfield; /* Firefox */
+  appearance: textfield;
+  /* Standard */
+  -moz-appearance: textfield;
+  /* Firefox */
 }
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none; /* Chrome, Safari, Edge */
+  -webkit-appearance: none;
+  /* Chrome, Safari, Edge */
   margin: 0;
 }
 
@@ -342,6 +351,15 @@ input[type="number"]::-webkit-outer-spin-button {
   transition: transform 120ms ease, filter 120ms ease;
 }
 
+.emprendedor {
+  background: var(--color-blanco);
+  color: var(--color-oscuro);
+  text-decoration: none; 
+  display: inline-block; 
+  text-align: center;
+  cursor: pointer;
+}
+
 .btn:hover {
   transform: translateY(-1px);
   filter: brightness(0.98);
@@ -355,6 +373,15 @@ input[type="number"]::-webkit-outer-spin-button {
   background: linear-gradient(135deg, var(--color-azul-1), var(--color-primary-variant));
   color: var(--color-blanco);
 }
+
+.btn-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+
+
 
 /*====================Parte Izquierda==============*/
 

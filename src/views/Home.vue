@@ -31,6 +31,37 @@
       </div>
     </section>
 
+    <!-- ===== REGISTRA TU RESTAURANTE ===== -->
+    <section class="plan">
+      <header class="section-header">
+        <h2>Registra tu Restaurante</h2>
+        <p>Únete a MiMesaYa gratis y haz crecer tu negocio con nuestro modelo de negocio flexible.</p>
+      </header>
+      <div class="plan__wrapper">
+        <div class="plan__content">
+          <div class="plan__text">
+            <h3 class="plan__title">Para Restaurantes</h3>
+            <ul class="plan__features">
+              <li><strong>Registro 100% gratuito</strong>: Sin costos iniciales ni mensualidades.</li>
+              <li>Gestiona reservas en tiempo real desde nuestra plataforma intuitiva.</li>
+              <li>Solo pagas una <strong>comisión del 5% por cada reserva</strong> confirmada.</li>
+              <li>Accede a reportes detallados para optimizar la operación de tu restaurante.</li>
+              <li>Atrae más clientes y aumenta tu visibilidad con nuestro soporte dedicado.</li>
+            </ul>
+            <div class="plan__actions">
+              <button class="btn btn--primary">
+                <RouterLink to="/registrar-restaurante" class="footer-link"> Registrar ahora</RouterLink>
+              </button>
+            </div>
+          </div>
+          <div class="plan__media">
+            <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=870&auto=format&fit=crop"
+              alt="Interior de un restaurante moderno" class="plan__img" loading="lazy" decoding="async" />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== AMBIENTES ===== -->
     <section class="ambientes" ref="ambientesRef">
       <header class="section-header">
@@ -69,33 +100,17 @@
       </ul>
     </section>
 
-    <!-- ===== UBICACIÓN (HORIZONTAL) ===== -->
-    <section class="ubicacion">
+    <!-- ===== CARRUSEL DE LOGOS ===== -->
+    <section class="logos">
       <header class="section-header">
-        <h2>¿Dónde estamos?</h2>
-        <p>Hiciste tu reserva o quieres disfrutar de un buen restaurante, visítanos.</p>
+        <h2>Nuestras Marcas Asociadas</h2>
+        <p>Colaboramos con las mejores cadenas de restaurantes para ofrecerte experiencias únicas.</p>
       </header>
-
-      <div class="map-wrapper map-wrapper--horizontal">
-        <iframe class="map" title="Ubicación del restaurante" loading="lazy" allowfullscreen
-          referrerpolicy="no-referrer-when-downgrade"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d997!2d-74.072090!3d4.710989!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3ARestaurante!2sTu%20Restaurante!5e0!3m2!1ses!2sCO!4v1680000000000">
-        </iframe>
-
-        <aside class="visit">
-          <h3 class="visit__title">Horarios & Contacto</h3>
-          <ul class="visit__list">
-            <li><strong>L–J:</strong> 12:00–22:00</li>
-            <li><strong>V–S:</strong> 12:00–00:00</li>
-            <li><strong>Dom:</strong> 12:00–21:00</li>
-            <li><strong>Tel:</strong> 322 8107910</li>
-          </ul>
-          <div class="visit__addr">
-            <p><strong>Dirección:</strong> Calle 4 #2-42 </p>
-            <p><strong>Cómo llegar:</strong> Estamos frente al centro comercial.</p>
-          </div>
-          <button class="btn btn--primary" @click="$emit('cta-whatsapp')">Escríbenos por WhatsApp</button>
-        </aside>
+      <div class="logos__carousel" ref="logosRef" @mouseenter="pauseLogos" @mouseleave="playLogos">
+        <div class="logos__track" :style="logosStyle">
+          <img v-for="(logo, i) in logos.concat(logos)" :key="'logo-' + i" class="logos__item" :src="logo.src"
+            :alt="logo.alt" loading="lazy" decoding="async" />
+        </div>
       </div>
     </section>
   </main>
@@ -112,7 +127,7 @@ export default {
     const description =
       'Experiencias memorables en espacios únicos: barra para after office, terraza al aire libre, salón climatizado y salón privado.'
 
-    // CARRUSEL
+    // CARRUSEL HERO
     const images = reactive([
       { src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=870&auto=format&fit=crop', alt: 'Barra iluminada' },
       { src: 'https://images.unsplash.com/photo-1667388969250-1c7220bf3f37?q=80&w=910&auto=format&fit=crop', alt: 'Salón principal' },
@@ -121,7 +136,7 @@ export default {
     ])
 
     const current = ref(0)
-    const DURATION = 3500
+    const DURATION = 5000
     let timer = null
     const heroRef = ref(null)
 
@@ -220,7 +235,64 @@ export default {
       fetchAmbientes()
     })
 
-    // SCROLL & FOOTER
+    // CARRUSEL DE LOGOS
+    const logos = reactive([
+      { src: "https://laherradura.com.co/wp-content/uploads/2020/08/frisby.png", alt: "Frisby" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/McDonald%27s_logo.svg/2560px-McDonald%27s_logo.svg.png", alt: "McDonald's" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Burger_King_logo_%281999%E2%80%932020%29.svg/1012px-Burger_King_logo_%281999%E2%80%932020%29.svg.png", alt: "Burger King" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/9/91/KFC_Logo.svg", alt: "KFC" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/5/5a/Subway_bi_%282002%29.svg", alt: "Subway" },
+      { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Domino%27s_pizza_logo.svg/1018px-Domino%27s_pizza_logo.svg.png", alt: "Domino's Pizza" }
+    ])
+
+    const logosOffset = ref(0)
+    const LOGO_SPEED = 0.5 // píxeles por frame
+    let logosAnimationFrame = null
+    const logosRef = ref(null)
+
+    function animateLogos() {
+      logosOffset.value -= LOGO_SPEED
+      const logoWidth = 80 // ancho base reducido para móviles
+      const totalWidth = logos.length * logoWidth
+      if (Math.abs(logosOffset.value) >= totalWidth) {
+        logosOffset.value += totalWidth
+      }
+      logosAnimationFrame = requestAnimationFrame(animateLogos)
+    }
+
+    const playLogos = () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      if (!logosAnimationFrame) {
+        animateLogos()
+      }
+    }
+
+    const pauseLogos = () => {
+      if (logosAnimationFrame) {
+        cancelAnimationFrame(logosAnimationFrame)
+        logosAnimationFrame = null
+      }
+    }
+
+    const logosStyle = computed(() => ({
+      transform: `translateX(${logosOffset.value}px)`,
+      display: 'flex'
+    }))
+
+    onMounted(() => {
+      playLogos()
+      const io = new IntersectionObserver(
+        (entries) => (entries[0].isIntersecting ? playLogos() : pauseLogos()),
+        { threshold: 0.25 }
+      )
+      if (logosRef.value) io.observe(logosRef.value)
+    })
+
+    onBeforeUnmount(() => {
+      pauseLogos()
+    })
+
+    // SCROLL
     const ambientesRef = ref(null)
     function scrollToAmbientes() {
       ambientesRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -248,7 +320,12 @@ export default {
       loading,
       error,
       ambientesRef,
-      scrollToAmbientes
+      scrollToAmbientes,
+      logos,
+      logosRef,
+      logosStyle,
+      pauseLogos,
+      playLogos
     }
   }
 }
@@ -557,57 +634,118 @@ export default {
   flex-wrap: wrap;
 }
 
-/* ===== Ubicación ===== */
-.ubicacion {
-  max-width: 900px;
+/* ===== Logos Carousel ===== */
+.logos {
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto 3rem;
   padding: 0 1rem;
 }
 
-.map-wrapper {
-  display: grid;
-  grid-template-columns: 1fr;
+.logos__carousel {
+  position: relative;
+  height: 100px;
+  overflow: clip;
+  border-radius: var(--card-border-radius);
+  isolation: isolate;
+}
+
+.logos__track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+}
+
+.logos__item {
+  flex: 0 0 auto;
+  width: 80px;
+  height: 60px;
+  object-fit: contain;
+  margin: 0 2.5rem;
+  filter: grayscale(20%);
+  transition: filter 0.3s ease;
+}
+
+.logos__item:hover {
+  filter: grayscale(0%);
+}
+
+/* ===== Registra tu Restaurante ===== */
+.plan {
+  max-width: 1200px;
+  margin: 0 auto 1rem;
+  padding: 0 1rem;
+}
+
+.plan__wrapper {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  align-items: stretch;
+  align-items: center;
 }
 
-.map {
+.plan__content {
+  background: var(--color-blanco);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 2rem;
   width: 100%;
-  height: 260px;
-  border: 0;
-  display: block;
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--box-shadow);
-  background: var(--color-blanco);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.visit {
-  background: var(--color-blanco);
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--box-shadow);
-  padding: var(--card-padding);
+.plan__text {
   display: grid;
-  gap: .5rem;
-  align-content: start;
+  gap: 1rem;
+  text-align: left;
 }
 
-.visit__title {
-  margin: 0 0 .25rem;
-  color: var(--color-oscuro);
-  font-size: 1.2rem;
+.plan__media {
+  display: none;
+  /* Oculta la imagen por defecto en móviles */
 }
 
-.visit__list {
+.plan__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--border-radius-2);
+}
+
+.plan__title {
   margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--color-dark-variant);
-  font-size: 1rem;
+  color: var(--color-oscuro);
+  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
 }
 
-.visit__addr {
+.plan__features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   color: var(--color-dark-variant);
-  font-size: 1rem;
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+.plan__features li {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.plan__features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-azul-1);
+  font-weight: bold;
+}
+
+.plan__actions {
+  display: flex;
+  justify-content: center;
 }
 
 /* ===== Botones ===== */
@@ -654,34 +792,19 @@ export default {
 
 /* ===== Breakpoints agrupados ===== */
 @media (min-width: 480px) {
-  .map {
-    height: 320px;
-  }
-
   .place__desc {
     font-size: 1.1rem;
+  }
+
+  .logos__item {
+    width: 110px;
+    height: 85px;
   }
 }
 
 @media (min-width: 768px) {
-  /* Ambientes */
   .place {
     grid-column: span 6;
-  }
-
-  /* Ubicación */
-  .map-wrapper {
-    grid-template-columns: 1.6fr 1fr;
-  }
-
-  .map {
-    height: 360px;
-  }
-}
-
-@media (min-width: 992px) {
-  .map {
-    height: 420px;
   }
 }
 
@@ -702,6 +825,34 @@ export default {
 
   .place__body {
     min-height: 200px;
+  }
+
+  .logos__carousel {
+    max-width: 1100px;
+    margin: 0 auto;
+    height: 160px;
+  }
+
+  .logos__item {
+    width: 120px;
+    height: 90px;
+  }
+
+  .plan__content {
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .plan__text {
+    flex: 1;
+  }
+
+  .plan__media {
+    display: block;
+    flex: 0 0 40%;
+    max-width: 400px;
+    height: 300px;
   }
 }
 </style>

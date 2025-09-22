@@ -10,17 +10,19 @@ import Home from "@/views/Home.vue";
 import Reservas from "@/views/Reservas.vue";
 import Contacto from "@/views/Contacto.vue";
 import Login from "@/views/Login.vue";
+import RegistrarRestaurante from "@/views/RegistrarRestaurante.vue";
 
 // Cliente
-import Perfil from "@/views/Cliente/Perfil.vue";
+import PerfilCliente from "@/views/Cliente/PerfilCliente.vue";
 
 // Administrador
 import GestionarReservas from "@/views/Administrador/GestionarReservas.vue";
 import GestionarMesas from "@/views/Administrador/GestorMesas.vue";
 import GestionarClientes from "@/views/Administrador/GestorClientes.vue";
+import PerfilAdministrador from "@/views/Administrador/PerfilAdministrador.vue";
 
 const routes = [
-  // 🌐 Rutas públicas (cualquiera puede ver)
+  // 🌐 Rutas públicas
   {
     path: "/",
     component: LayoutConFooter,
@@ -36,16 +38,22 @@ const routes = [
     path: "/perfil",
     component: LayoutConFooter,
     children: [
-      { path: "", name: "Perfil", component: Perfil, meta: { requiereAuth: true, rol: "cliente" } },
+      { 
+        path: "", 
+        name: "PerfilCliente", 
+        component: PerfilCliente, 
+        meta: { requiereAuth: true, rol: "cliente" } 
+      },
     ],
   },
 
-  // 🔑 Login (sin footer)
+  // 🔑 Login y registro (sin footer)
   {
     path: "/",
     component: LayoutSinFooter,
     children: [
       { path: "login", name: "Login", component: Login },
+      { path: "registrar-restaurante", name: "RegistrarRestaurante", component: RegistrarRestaurante }
     ],
   },
 
@@ -55,6 +63,7 @@ const routes = [
     component: LayoutSinFooter,
     meta: { requiereAuth: true, rol: "administrador" },
     children: [
+      { path: "perfil", name: "PerfilAdministrador", component: PerfilAdministrador },
       { path: "reservas", name: "GestionarReservas", component: GestionarReservas },
       { path: "mesas", name: "GestionarMesas", component: GestionarMesas },
       { path: "clientes", name: "GestionarClientes", component: GestionarClientes },
@@ -76,8 +85,13 @@ router.beforeEach((to, from, next) => {
 
   // ⛔ Bloquear acceso a login si ya está autenticado
   if (to.name === 'Login' && auth.isAuthenticated) {
-    if (auth.isAdmin) return next('/admin/mesas')
-    return next('/inicio')
+    if (auth.isAdmin) return next('/admin/perfil')
+    return next('/perfil')
+  }
+
+  // ⛔ Bloquear acceso a registrar-restaurante si ya está autenticado
+  if (to.name === 'RegistrarRestaurante' && auth.isAuthenticated) {
+    return next('/') // o podrías mandarlo a su perfil
   }
 
   // 🔒 Rutas que requieren autenticación
