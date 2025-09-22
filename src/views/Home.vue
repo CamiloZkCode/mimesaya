@@ -12,7 +12,9 @@
           <h1 class="hero__title">{{ title }}</h1>
           <p id="home-intro" class="hero__desc">{{ description }}</p>
           <div class="hero__cta">
-            <button class="btn btn--primary"> <RouterLink to="/reservas" class="footer-link"> Reservar ahora </RouterLink></button>
+            <button class="btn btn--primary">
+              <RouterLink to="/reservas" class="footer-link"> Reservar ahora </RouterLink>
+            </button>
             <button class="btn btn--ghost" @click="scrollToAmbientes">Ver ambientes</button>
           </div>
         </header>
@@ -36,28 +38,30 @@
         <p>Elige tu espacio favorito y continúa con la reserva.</p>
       </header>
 
-      <ul class="ambientes__grid" role="list">
-        <li v-for="place in places" :key="place.key" class="place">
+      <div v-if="loading" class="loading">Cargando ambientes...</div>
+      <div v-else-if="error" class="error">{{ error }}</div>
+      <ul v-else class="ambientes__grid" role="list">
+        <li v-for="ambiente in ambientes" :key="ambiente.id_ambiente" class="place">
           <article class="place__card">
             <div class="place__media">
-              <img class="place__img" :src="place.image" :alt="`Ambiente ${place.title}`" loading="lazy"
-                decoding="async" />
-              <span class="place__badge">{{ place.badge }}</span>
+              <img class="place__img" :src="ambiente.imagen_ambiente" :alt="`Ambiente ${ambiente.nombre_ambiente}`"
+                loading="lazy" decoding="async" />
+              <span class="place__badge">{{ ambiente.insignia }}</span>
             </div>
             <div class="place__body">
               <h3 class="place__title">
-                {{ place.title }}
+                {{ ambiente.nombre_ambiente }}
                 <span class="place__capacity">
                   <img src="/src/assets/Icons/capacidad.png" alt="Capacidad" class="capacity-icon" />
-                  {{ place.capacity }}
+                  {{ ambiente.capacidad_min }}–{{ ambiente.capacidad_max }}
                 </span>
               </h3>
-              <p class="place__desc">{{ place.desc }}</p>
+              <p class="place__desc">{{ ambiente.descripcion_ambiente }}</p>
               <div class="place__meta">
-                <span class="chip" v-if="place.features?.length">• {{ place.features.join(' • ') }}</span>
+                <span class="chip" v-if="ambiente.caracteristica">• {{ ambiente.caracteristica }}</span>
               </div>
               <div class="place__actions">
-                <button class="btn btn--primary" @click="$emit('reservar', place.key)">Reservar</button>
+                <button class="btn btn--primary" @click="$emit('reservar', ambiente.id_ambiente)">Reservar</button>
               </div>
             </div>
           </article>
@@ -73,7 +77,6 @@
       </header>
 
       <div class="map-wrapper map-wrapper--horizontal">
-        <!-- Reemplaza el src con el embed de tu dirección -->
         <iframe class="map" title="Ubicación del restaurante" loading="lazy" allowfullscreen
           referrerpolicy="no-referrer-when-downgrade"
           src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d997!2d-74.072090!3d4.710989!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3ARestaurante!2sTu%20Restaurante!5e0!3m2!1ses!2sCO!4v1680000000000">
@@ -85,163 +88,188 @@
             <li><strong>L–J:</strong> 12:00–22:00</li>
             <li><strong>V–S:</strong> 12:00–00:00</li>
             <li><strong>Dom:</strong> 12:00–21:00</li>
-            <li><strong>Tel:</strong> (601) 000 0000</li>
+            <li><strong>Tel:</strong> 322 8107910</li>
           </ul>
           <div class="visit__addr">
-            <p><strong>Dirección:</strong> Calle 123 #45–67, Bogotá</p>
-            <p><strong>Cómo llegar:</strong> Estamos frente al Parque X.</p>
+            <p><strong>Dirección:</strong> Calle 4 #2-42 </p>
+            <p><strong>Cómo llegar:</strong> Estamos frente al centro comercial.</p>
           </div>
           <button class="btn btn--primary" @click="$emit('cta-whatsapp')">Escríbenos por WhatsApp</button>
         </aside>
       </div>
     </section>
-
   </main>
 </template>
 
-<script setup lang="ts">
+<script>
 import { onMounted, onBeforeUnmount, reactive, ref, computed } from 'vue'
+import { obtenerAmbientes } from '@/services/ambientes'
 
-/** ---------- TEXTOS ---------- */
-const title = 'Reserva tu mesa con un clic'
-const description =
-  'Experiencias memorables en espacios únicos: barra para after office, terraza al aire libre, salón climatizado y salón privado.'
+export default {
+  setup() {
+    // TEXTOS
+    const title = 'Reserva tu mesa con un clic'
+    const description =
+      'Experiencias memorables en espacios únicos: barra para after office, terraza al aire libre, salón climatizado y salón privado.'
 
-/** ---------- CARRUSEL ---------- */
-type Slide = { src: string; alt: string }
-const images = reactive<Slide[]>([
-  { src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=870&auto=format&fit=crop', alt: 'Barra iluminada' },
-  { src: 'https://images.unsplash.com/photo-1667388969250-1c7220bf3f37?q=80&w=910&auto=format&fit=crop', alt: 'Salón principal' },
-  { src: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=870&auto=format&fit=crop', alt: 'Barra con coctelería' },
-  { src: 'https://images.unsplash.com/photo-1521917441209-e886f0404a7b?q=80&w=1160&auto=format&fit=crop', alt: 'Barra con coctelería' }
+    // CARRUSEL
+    const images = reactive([
+      { src: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=870&auto=format&fit=crop', alt: 'Barra iluminada' },
+      { src: 'https://images.unsplash.com/photo-1667388969250-1c7220bf3f37?q=80&w=910&auto=format&fit=crop', alt: 'Salón principal' },
+      { src: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=870&auto=format&fit=crop', alt: 'Barra con coctelería' },
+      { src: 'https://images.unsplash.com/photo-1521917441209-e886f0404a7b?q=80&w=1160&auto=format&fit=crop', alt: 'Barra con coctelería' }
+    ])
 
-  ])
+    const current = ref(0)
+    const DURATION = 3500
+    let timer = null
+    const heroRef = ref(null)
 
-const current = ref(0)
-const DURATION = 5500
-let timer: number | null = null
-const heroRef = ref<HTMLElement | null>(null)
+    const next = () => (current.value = (current.value + 1) % images.length)
+    const prev = () => (current.value = (current.value - 1 + images.length) % images.length)
+    const go = (i) => (current.value = i)
 
-const next = () => (current.value = (current.value + 1) % images.length)
-const prev = () => (current.value = (current.value - 1 + images.length) % images.length)
-const go = (i: number) => (current.value = i)
+    const stop = () => {
+      if (timer) {
+        window.clearInterval(timer)
+        timer = null
+      }
+    }
+    const play = () => {
+      stop()
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      timer = window.setInterval(next, DURATION)
+    }
+    const pause = () => stop()
 
-const stop = () => { if (timer) { window.clearInterval(timer); timer = null } }
-const play = () => {
-  stop()
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  timer = window.setInterval(next, DURATION)
-}
-const pause = () => stop()
+    const handleVisibility = () => (document.hidden ? stop() : play())
 
-const handleVisibility = () => (document.hidden ? stop() : play())
+    onMounted(() => {
+      const preload = new Image()
+      preload.src = images[(current.value + 1) % images.length].src
 
-onMounted(() => {
-  const preload = new Image()
-  preload.src = images[(current.value + 1) % images.length].src
+      document.addEventListener('visibilitychange', handleVisibility)
+      const io = new IntersectionObserver(
+        (entries) => (entries[0].isIntersecting ? play() : stop()),
+        { threshold: 0.25 }
+      )
+      if (heroRef.value) io.observe(heroRef.value)
+      bindSwipe(heroRef.value)
+    })
+    onBeforeUnmount(() => {
+      stop()
+      document.removeEventListener('visibilitychange', handleVisibility)
+      unbindSwipe()
+    })
 
-  document.addEventListener('visibilitychange', handleVisibility)
-  const io = new IntersectionObserver(
-    (entries) => (entries[0].isIntersecting ? play() : stop()),
-    { threshold: 0.25 }
-  )
-  if (heroRef.value) io.observe(heroRef.value)
-  bindSwipe(heroRef.value)
-})
-onBeforeUnmount(() => {
-  stop()
-  document.removeEventListener('visibilitychange', handleVisibility)
-  unbindSwipe()
-})
+    // swipe básico
+    let touchStartX = 0
+    let touchEndX = 0
+    function bindSwipe(el) {
+      if (!el) return
+      el.addEventListener('touchstart', onTouchStart, { passive: true })
+      el.addEventListener('touchend', onTouchEnd, { passive: true })
+    }
+    function unbindSwipe() {
+      if (!heroRef.value) return
+      heroRef.value.removeEventListener('touchstart', onTouchStart)
+      heroRef.value.removeEventListener('touchend', onTouchEnd)
+    }
+    function onTouchStart(e) {
+      touchStartX = e.changedTouches[0].screenX
+    }
+    function onTouchEnd(e) {
+      touchEndX = e.changedTouches[0].screenX
+      const delta = touchEndX - touchStartX
+      if (Math.abs(delta) > 40) {
+        delta < 0 ? next() : prev()
+      }
+    }
 
-// swipe básico
-let touchStartX = 0
-let touchEndX = 0
-function bindSwipe(el: HTMLElement | null) {
-  if (!el) return
-  el.addEventListener('touchstart', onTouchStart, { passive: true })
-  el.addEventListener('touchend', onTouchEnd, { passive: true })
-}
-function unbindSwipe() {
-  if (!heroRef.value) return
-  heroRef.value.removeEventListener('touchstart', onTouchStart)
-  heroRef.value.removeEventListener('touchend', onTouchEnd)
-}
-function onTouchStart(e: TouchEvent) { touchStartX = e.changedTouches[0].screenX }
-function onTouchEnd(e: TouchEvent) {
-  touchEndX = e.changedTouches[0].screenX
-  const delta = touchEndX - touchStartX
-  if (Math.abs(delta) > 40) { delta < 0 ? next() : prev() }
-}
+    const slidesStyle = computed(() => ({ '--active-index': String(current.value) }))
 
-const slidesStyle = computed(() => ({ '--active-index': String(current.value) } as any))
+    // AMBIENTES
+    const ambientes = reactive([])
+    const loading = ref(true)
+    const error = ref(null)
 
-/** ---------- AMBIENTES ---------- */
-type Place = {
-  key: string
-  title: string
-  desc: string
-  image: string
-  capacity?: string
-  features?: string[]
-  badge?: string
-}
+    async function fetchAmbientes() {
+      try {
+        loading.value = true
+        const data = await obtenerAmbientes()
+        const mappedData = data.map((item) => ({
+          id_ambiente: item.id_ambiente.toString(),
+          nombre_ambiente: item.nombre_ambiente,
+          descripcion_ambiente: item.descripcion_ambiente,
+          capacidad_min: item.capacidad_min.toString(),
+          capacidad_max: item.capacidad_max.toString(),
+          imagen_ambiente: item.imagen_ambiente,
+          caracteristica: item.caracteristica || '',
+          insignia: item.insignia || ''
+        }))
+        ambientes.splice(0, ambientes.length, ...mappedData)
+      } catch (err) {
+        error.value = 'No se pudieron cargar los ambientes. Intenta de nuevo más tarde.'
+        console.error('Error al obtener ambientes:', err)
+      } finally {
+        loading.value = false
+      }
+    }
 
-const places = reactive<Place[]>([
-  {
-    key: 'barra',
-    title: 'Barra',
-    desc: 'Coctelería de autor y energía alta. Ideal para parejas o grupos pequeños.',
-    image: 'https://images.unsplash.com/photo-1543007631-283050bb3e8c?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    capacity: '2–4',
-    features: ['Cocteles', 'Alta energía'],
-    badge: 'Popular'
-  },
-  {
-    key: 'terraza',
-    title: 'Terraza',
-    desc: 'Aire libre con vegetación y luces cálidas. Perfecta para el atardecer.',
-    image: 'https://images.unsplash.com/photo-1665758564776-f2aa6b41327e?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    capacity: '2–6',
-    features: ['Al aire libre'],
-    badge: 'Al aire libre'
-  },
-  {
-    key: 'salon',
-    title: 'Salón',
-    desc: 'Ambiente cómodo y climatizado con acústica pensada para conversar.',
-    image: 'https://images.unsplash.com/photo-1560053608-13721e0d69e8?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    capacity: '2–8',
-    features: ['Climatizado'],
-    badge: 'Cómodo'
-  },
-  {
-    key: 'privado',
-    title: 'Privado',
-    desc: 'Espacio íntimo para celebraciones o reuniones ejecutivas.',
-    image: 'https://images.unsplash.com/photo-1645640931580-b4909b189b2f?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-    capacity: '6–12',
-    features: ['Privacidad'],
-    badge: 'Íntimo'
+    onMounted(() => {
+      fetchAmbientes()
+    })
+
+    // SCROLL & FOOTER
+    const ambientesRef = ref(null)
+    function scrollToAmbientes() {
+      ambientesRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    function onKey(e) {
+      if (e.key === 'ArrowRight') next()
+      if (e.key === 'ArrowLeft') prev()
+    }
+    window.addEventListener('keydown', onKey)
+    onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+
+    return {
+      title,
+      description,
+      images,
+      current,
+      heroRef,
+      next,
+      prev,
+      go,
+      pause,
+      play,
+      slidesStyle,
+      ambientes,
+      loading,
+      error,
+      ambientesRef,
+      scrollToAmbientes
+    }
   }
-])
-
-/** ---------- SCROLL & FOOTER ---------- */
-const ambientesRef = ref<HTMLElement | null>(null)
-function scrollToAmbientes() {
-  ambientesRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
-const year = new Date().getFullYear()
-
-function onKey(e: KeyboardEvent) {
-  if (e.key === 'ArrowRight') next()
-  if (e.key === 'ArrowLeft') prev()
-}
-window.addEventListener('keydown', onKey)
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <style scoped>
+/* Estilos existentes (sin cambios) */
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-dark-variant);
+  font-size: 1.2rem;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-error, #d32f2f);
+  font-size: 1.2rem;
+}
+
 /* ===== Base ===== */
 .home {
   display: grid;
@@ -497,7 +525,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   display: inline-block;
 }
 
-
 .place__desc {
   margin: 0;
   color: var(--color-dark-variant);
@@ -523,7 +550,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   font-size: .78rem;
 }
 
-
 .place__actions {
   align-self: end;
   display: flex;
@@ -533,7 +559,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 /* ===== Ubicación ===== */
 .ubicacion {
-  max-width: 1200px;
+  max-width: 900px;
   margin: 0 auto 3rem;
   padding: 0 1rem;
 }
@@ -568,6 +594,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .visit__title {
   margin: 0 0 .25rem;
   color: var(--color-oscuro);
+  font-size: 1.2rem;
 }
 
 .visit__list {
@@ -575,11 +602,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   padding: 0;
   list-style: none;
   color: var(--color-dark-variant);
+  font-size: 1rem;
 }
 
 .visit__addr {
   color: var(--color-dark-variant);
-  font-size: .95rem;
+  font-size: 1rem;
 }
 
 /* ===== Botones ===== */
@@ -608,7 +636,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   color: var(--color-blanco);
 }
 
-.footer-link{
+.footer-link {
   color: var(--color-blanco);
 }
 
@@ -632,13 +660,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
   .place__desc {
     font-size: 1.1rem;
-
   }
-
 }
 
 @media (min-width: 768px) {
-
   /* Ambientes */
   .place {
     grid-column: span 6;

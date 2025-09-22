@@ -7,39 +7,38 @@
 
     <!-- Contenido dinámico -->
     <main class="contenido">
-      <router-view />
+      <RouterView />
     </main>
 
     <!-- Footer fijo abajo -->
     <footer>
-      <Footer />
+      <Footers />
     </footer>
   </div>
 </template>
 
 <script setup>
 import Navbar from "../components/navbar.vue";
-import Footer from "../components/footer.vue";
+import Footers from "../components/footer.vue";
 </script>
 
 <style scoped>
-
 .layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh; 
+  min-height: 100vh;
 }
 
 header {
-  width: 100%; 
+  width: 100%;
 }
 
 .contenido {
-  flex: 1; 
+  flex: 1;
   padding: 1rem;
 }
 
 footer {
-  width: 100%; 
+  width: 100%;
 }
 </style>

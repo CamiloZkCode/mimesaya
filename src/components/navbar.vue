@@ -86,7 +86,7 @@
   </transition>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth' // Asegúrate de ajustar la ruta según tu estructura
