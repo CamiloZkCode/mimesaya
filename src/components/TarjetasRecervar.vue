@@ -1,9 +1,10 @@
-<template>
+<template> 
   <main class="reservas">
     <!-- ===== NAVBAR / FILTROS ===== -->
     <section class="filters" aria-label="Filtros de búsqueda">
       <div class="filters__row">
-        <div class="field">
+        <!-- Lugar -->
+        <div class="field field--col3">
           <label for="f-lugar">Lugar</label>
           <select id="f-lugar" v-model="filters.place">
             <option value="">Todos</option>
@@ -11,7 +12,17 @@
           </select>
         </div>
 
-        <div class="field">
+        <!-- Restaurante -->
+        <div class="field field--col3">
+          <label for="f-restaurante">Restaurante</label>
+          <select id="f-restaurante" v-model="filters.restaurant">
+            <option value="">Todos</option>
+            <option v-for="r in restaurantOptions" :key="r" :value="r">{{ r }}</option>
+          </select>
+        </div>
+
+        <!-- Personas -->
+        <div class="field field--col3">
           <label for="f-personas">Personas</label>
           <select id="f-personas" v-model.number="filters.people">
             <option :value="0">Cualquiera</option>
@@ -19,11 +30,13 @@
           </select>
         </div>
 
-        <div class="field">
+        <!-- Fecha -->
+        <div class="field field--col3">
           <label for="f-fecha">Fecha</label>
           <input id="f-fecha" type="date" v-model="filters.date" />
         </div>
 
+        <!-- Acciones -->
         <div class="filters__actions">
           <button class="btn btn--primary" @click="applyFilters">Aplicar</button>
           <button class="btn btn--ghost" @click="clearFilters">Limpiar</button>
@@ -55,6 +68,10 @@
                 <div class="row">
                   <dt>Ubicación</dt>
                   <dd>{{ t.position }}</dd>
+                </div>
+                <div class="row">
+                  <dt>Restaurante</dt>
+                  <dd>{{ t.restaurant }}</dd>
                 </div>
                 <div class="row">
                   <dt>Fecha</dt>
@@ -90,6 +107,7 @@
             <div class="modal__details">
               <p><strong>Lugar:</strong> {{ placeLabel(modal.table?.place) }}</p>
               <p><strong>Capacidad:</strong> {{ modal.table?.capacity }} pers.</p>
+              <p><strong>Restaurante:</strong> {{ modal.table?.restaurant }}</p>
               <p><strong>Fecha:</strong> {{ displayDate }}</p>
               <p><strong>Hora:</strong> {{ form.time || 'A convenir' }}</p>
             </div>
@@ -182,6 +200,7 @@ const timeSlots = [
 const todayISO = new Date().toISOString().slice(0, 10)
 const filters = reactive({
   place: '' as '' | 'barra' | 'terraza' | 'salon' | 'privado',
+  restaurant: '',              // nuevo
   people: 0,
   date: todayISO
 })
@@ -189,6 +208,7 @@ const applied = reactive({ ...filters })
 function applyFilters() { Object.assign(applied, filters) }
 function clearFilters() {
   filters.place = ''
+  filters.restaurant = ''
   filters.people = 0
   filters.date = todayISO
   applyFilters()
@@ -200,7 +220,7 @@ if (route.query.tipo && typeof route.query.tipo === 'string') {
   applied.place = filters.place
 }
 
-/* ---------- Datos de ejemplo (simulación inventario) ---------- */
+/* ---------- Datos de ejemplo ---------- */
 type Table = {
   id: string
   number: number
@@ -210,26 +230,35 @@ type Table = {
   features?: string[]
   image: string
   favorite?: boolean
+  restaurant: string
 }
 const tables = ref<Table[]>([
-  { id: 't-01', number: 5, place: 'barra', capacity: 2, position: 'Cerca de la barra', features: ['Alta energía'], image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-02', number: 12, place: 'terraza', capacity: 4, position: 'Esquina con plantas', features: ['Al aire libre', 'Pet-friendly'], image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-03', number: 21, place: 'salon', capacity: 4, position: 'Cerca a ventana', features: ['Climatizado'], image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-04', number: 8, place: 'privado', capacity: 8, position: 'Sala privada', features: ['Privacidad'], image: 'https://images.unsplash.com/photo-1532634896-26909d0d4b6a?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-05', number: 9, place: 'salon', capacity: 6, position: 'Centro del salón', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-06', number: 2, place: 'terraza', capacity: 2, position: 'Bajo guirnaldas', image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1200&auto=format&fit=crop' }
+  { id: 't-01', number: 5,  place: 'barra',   capacity: 2, position: 'Cerca de la barra', features: ['Alta energía'], image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop', restaurant: 'La Brasa' },
+  { id: 't-02', number: 12, place: 'terraza', capacity: 4, position: 'Esquina con plantas', features: ['Al aire libre', 'Pet-friendly'], image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1200&auto=format&fit=crop', restaurant: 'Bosque Terraza' },
+  { id: 't-03', number: 21, place: 'salon',   capacity: 4, position: 'Cerca a ventana', features: ['Climatizado'], image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1200&auto=format&fit=crop', restaurant: 'Salón Central' },
+  { id: 't-04', number: 8,  place: 'privado', capacity: 8, position: 'Sala privada', features: ['Privacidad'], image: 'https://images.unsplash.com/photo-1532634896-26909d0d4b6a?q=80&w=1200&auto=format&fit=crop', restaurant: 'Reserva Privada' },
+  { id: 't-05', number: 9,  place: 'salon',   capacity: 6, position: 'Centro del salón', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop', restaurant: 'Salón Central' },
+  { id: 't-06', number: 2,  place: 'terraza', capacity: 2, position: 'Bajo guirnaldas', image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1200&auto=format&fit=crop', restaurant: 'Bosque Terraza' }
 ])
+
+/* ---------- Opciones dinámicas de restaurantes ---------- */
+const restaurantOptions = computed(() => {
+  const set = new Set(tables.value.map(t => t.restaurant))
+  return Array.from(set)
+})
 
 /* ---------- Computados ---------- */
 const filteredTables = computed(() =>
   tables.value.filter(t => {
     if (applied.place && t.place !== applied.place) return false
     if (applied.people && t.capacity < applied.people) return false
+    if (applied.restaurant && t.restaurant !== applied.restaurant) return false
     return true
   })
 )
 const filtersSummary = computed(() => {
   const parts: string[] = []
+  if (applied.restaurant) parts.push(applied.restaurant)
   if (applied.place) parts.push(placeLabel(applied.place))
   if (applied.people) parts.push(`${applied.people} pers.`)
   if (applied.date !== todayISO) parts.push(applied.date)
@@ -289,6 +318,7 @@ function submitReservation() {
     tableId: modal.table?.id,
     tableNumber: modal.table?.number,
     place: modal.table?.place,
+    restaurant: modal.table?.restaurant,
     date: applied.date,
     people: Math.max(applied.people, modal.table?.capacity || 0),
     ...form
@@ -302,6 +332,7 @@ function submitReservation() {
 function suggestRelaxFilters() {
   if (applied.people > 0) filters.people = Math.max(0, applied.people - 1)
   filters.place = ''
+  filters.restaurant = ''
   applyFilters()
 }
 
@@ -340,11 +371,13 @@ applyFilters()
   grid-template-columns: repeat(12, 1fr);
 }
 
+/* Utilidad para armar 4 columnas en >=720px */
 .field {
   grid-column: span 12;
   display: grid;
   gap: .25rem;
 }
+.field--col3 { grid-column: span 12; }
 
 .field label {
   color: var(--color-oscuro);
@@ -489,8 +522,8 @@ applyFilters()
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .45);
-  backdrop-filter: blur(5px); /* Efecto de desenfoque */
-  -webkit-backdrop-filter: blur(5px); /* Soporte para navegadores WebKit */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: grid;
   place-items: center;
   padding: 1rem;
@@ -500,8 +533,8 @@ applyFilters()
 .modal {
   background: var(--color-blanco);
   width: min(820px, 100%);
-  max-height: 90vh; /* Limita la altura al 90% de la ventana */
-  overflow-y: auto; /* Habilita desplazamiento vertical */
+  max-height: 90vh;
+  overflow-y: auto;
   border-radius: var(--card-border-radius);
   box-shadow: var(--box-shadow);
 }
@@ -584,7 +617,6 @@ applyFilters()
   display: flex;
   gap: 1rem;
   width: 200px;
-
 }
 
 .chk {
@@ -669,67 +701,20 @@ applyFilters()
   outline-offset: 2px;
 }
 
-@media (min-width: 560px) {
-  .modal__details {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-    .checks{
-      width: 250px;
-  }
-
-  .card__info{
-      font-size: 0.9rem;
-
-  }
-}
-
+/* ==== BREAKPOINT: cuatro campos en la misma fila ==== */
 @media (min-width: 720px) {
-
-  #f-lugar.field,
-  #f-personas.field,
-  #f-fecha.field {
-    grid-column: span 4;
-  }
-
-  .field:nth-child(1) {
-    grid-column: span 4;
-  }
-
-  .field:nth-child(2) {
-    grid-column: span 4;
-  }
-
-  .field:nth-child(3) {
-    grid-column: span 4;
-  }
-
+  .field--col3 { grid-column: span 3; }
   .filters__actions {
-    grid-column: span 12;
+    grid-column: 1 / -1; /* acciones ocupan toda la fila siguiente */
     justify-content: flex-end;
-  }
-
-  .form .field:nth-child(1),
-  .form .field:nth-child(2),
-  .form .field:nth-child(3),
-  .form .field:nth-child(4) {
-    grid-column: span 6;
   }
 }
 
 @media (min-width: 768px) {
-  .card {
-    grid-column: span 6;
-  }
-
- 
+  .card { grid-column: span 6; }
 }
 
 @media (min-width: 1100px) {
-  .card {
-    grid-column: span 4;
-  }
-
-  
+  .card { grid-column: span 4; }
 }
 </style>
