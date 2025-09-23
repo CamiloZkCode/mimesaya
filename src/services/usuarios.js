@@ -9,9 +9,10 @@ export async function registrarUsuario(usuario) {
     throw err.response?.data || err;
   }
 }
-export async function registrarEmpresa(empresa) {
+
+export async function registrarAdministrador(formData) {
   try {
-    const res = await API.post("/auth/registrar-empresa", empresa);
+    const res = await API.post("/auth/registrar-administrador", formData);
     return res.data;
   } catch (err) {
     throw err.response?.data || err;

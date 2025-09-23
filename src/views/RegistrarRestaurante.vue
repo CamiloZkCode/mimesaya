@@ -19,7 +19,7 @@
 
             <div class="input-box">
               <label for="nombre">Nombre Completo</label>
-              <div class="input-wrapper">
+            <div class="input-wrapper">
                 <input type="text" v-model="form.usuario.nombre" id="nombre" placeholder="Joan Zapata" required />
                 <span class="material-symbols-outlined icon-static">person</span>
               </div>
@@ -36,7 +36,8 @@
             <div class="input-box">
               <label for="correo">Correo</label>
               <div class="input-wrapper">
-                <input type="email" v-model="form.usuario.correo" id="correo" placeholder="admin@mimesaya.com" required />
+                <input type="email" v-model="form.usuario.correo" id="correo" placeholder="admin@mimesaya.com"
+                  required />
                 <span class="material-symbols-outlined icon-static">mail</span>
               </div>
             </div>
@@ -86,7 +87,8 @@
             <div class="input-box">
               <label for="telefono_restaurante">Teléfono</label>
               <div class="input-wrapper">
-                <input type="tel" v-model="form.restaurante.telefono" id="telefono_restaurante" placeholder="6011234567" />
+                <input type="tel" v-model="form.restaurante.telefono" id="telefono_restaurante"
+                  placeholder="6011234567" />
                 <span class="material-symbols-outlined icon-static">call</span>
               </div>
             </div>
@@ -111,7 +113,7 @@
 <script setup>
 import { ref } from "vue";
 import Swal from "sweetalert2";
-// import { registrarEmpresa } from "@/services/empresas.js" // futuro servicio
+import { registrarAdministrador } from "@/services/usuarios";
 
 const showPassword = ref(false);
 
@@ -134,23 +136,41 @@ const form = ref({
 
 async function registrarEmpresa() {
   try {
-    console.log("Admin:", form.value.usuario);
-    console.log("Restaurante:", form.value.restaurante);
+    const resp = await registrarAdministrador(form.value);
 
-    // const resp = await registrarEmpresa(form.value);
     Swal.fire({
       icon: "success",
       title: "Registro exitoso",
-      text: "Tu empresa fue registrada correctamente",
+      text: resp.mensaje,
+      confirmButtonText: "Configurar Pagos"
+    }).then(() => {
+      // Abrir el onboarding de Stripe en una nueva pestaña
+      window.open(resp.stripeOnboardingUrl, '_blank');
+      // Limpiar el formulario
+      form.value = {
+        usuario: {
+          cedula: "",
+          nombre: "",
+          telefono: "",
+          correo: "",
+          password: "",
+        },
+        restaurante: {
+          nit: "",
+          nombre: "",
+          direccion: "",
+          telefono: "",
+          logo: "",
+        },
+      };
     });
 
-    // Redirigir al login
-    window.location.href = "/login";
   } catch (error) {
     Swal.fire({
       icon: "error",
       title: "Error",
       text: error.message || "No se pudo registrar la empresa",
+      confirmButtonText: "OK"
     });
   }
 }
@@ -159,8 +179,8 @@ async function registrarEmpresa() {
 <style scoped>
 .empresa .form-container {
   width: 100%;
-  max-width: 900px; 
-  margin: 0 auto;   
+  max-width: 900px;
+  margin: 0 auto;
   padding: 1rem 2.5rem;
   background: var(--color-blanco);
   border-radius: var(--card-border-radius);
@@ -271,4 +291,3 @@ label {
   }
 }
 </style>
-

@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 async function crearUsuario({
   id_usuario,
@@ -39,10 +40,93 @@ async function busquedaxIdUsuario(id_usuario) {
   return rows[0]; // devuelve un único usuario o undefined si no existe
 }
 
+//CREACION DE ADMIN, RESTAURANTE Y STRIPE
+
+// Crear usuario administrador
+async function crearAdmin({
+  id_usuario,
+  nombre,
+  telefono,
+  correo,
+  contraseña_hash,
+}) {
+  // Verificar si ya existe
+  const [existe] = await db.query(
+    "SELECT id_usuario FROM usuarios WHERE id_usuario = ?",
+    [id_usuario]
+  );
+  if (existe.length > 0) {
+    throw new Error("La cédula ya está registrada");
+  }
+
+  // Insertar admin
+  await db.query(
+    `INSERT INTO usuarios (id_usuario, nombre, telefono, correo, contraseña_hash, id_rol)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [id_usuario, nombre, telefono, correo, contraseña_hash, 1] // 1 = Admin
+  );
+
+  return id_usuario; // Usamos la cédula como PK
+}
+
+// Crear restaurante asociado al admin
+async function crearRestaurante({
+  nit,
+  nombre_restaurante,
+  direccion,
+  telefono,
+  logo,
+  id_admin,
+  stripe_account_id,
+}) {
+  // Verificar NIT duplicado
+  const [existe] = await db.query(
+    "SELECT id_restaurante FROM restaurantes WHERE nit_restaurante = ?",
+    [nit]
+  );
+  if (existe.length > 0) {
+    throw new Error("El NIT ya está registrado");
+  }
+
+  const [result] = await db.query(
+    `INSERT INTO restaurantes 
+     (nit_restaurante, nombre_restaurante, direccion_restaurante, telefono_restaurante, logo_restaurante, id_admin, stripe_account_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nit,
+      nombre_restaurante,
+      direccion,
+      telefono,
+      logo,
+      id_admin,
+      stripe_account_id,
+    ]
+  );
+
+  return result.insertId;
+}
+
+// Crear cuenta Stripe Express
+async function crearCuentaStripeExpress(email) {
+  const account = await stripe.accounts.create({
+    type: "express",
+    country: "US",
+    email,
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+  });
+
+  return account.id;
+}
 
 // Exportar funciones del DAO
 module.exports = {
   crearUsuario,
   busquedaxCorreoUsuario,
   busquedaxIdUsuario,
+  crearAdmin,
+  crearRestaurante,
+  crearCuentaStripeExpress,
 };

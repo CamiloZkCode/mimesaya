@@ -5,16 +5,16 @@
         <form @submit.prevent="login">
           <h1>Iniciar Sesión</h1>
           <div class="input-box">
-            <label for="email">Correo Electrónico</label>
+            <label for="login-email">Correo Electrónico</label>
             <div class="input-wrapper">
-              <input type="email" v-model="loginForm.correo" id="email" placeholder="mimesaya@gmail.com" required />
+              <input type="email" v-model="loginForm.correo" id="login-email" placeholder="mimesaya@gmail.com" required />
               <span class="material-symbols-outlined icon-static">person</span>
             </div>
           </div>
           <div class="input-box">
-            <label for="password">Contraseña</label>
+            <label for="login-password">Contraseña</label>
             <div class="input-wrapper">
-              <input :type="showLoginPassword ? 'text' : 'password'" v-model="loginForm.password" id="password"
+              <input :type="showLoginPassword ? 'text' : 'password'" v-model="loginForm.password" id="login-password"
                 placeholder="********" required />
               <span class="material-symbols-outlined toggle-password" @click="toggleLoginPassword"
                 :aria-label="showLoginPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showLoginPassword ?
@@ -30,42 +30,42 @@
         <form @submit.prevent="register">
           <h1>Registrarse</h1>
           <div class="input-boxr">
-            <label for="nombre">Nombre Completo</label>
+            <label for="register-nombre">Nombre Completo</label>
             <div class="input-wrapper">
-              <input type="text" v-model="registerForm.nombre" id="nombre" placeholder="Joan David Zapata Turizo"
+              <input type="text" v-model="registerForm.nombre" id="register-nombre" placeholder="Joan David Zapata Turizo"
                 required />
               <span class="material-symbols-outlined icon-static">person</span>
             </div>
           </div>
 
           <div class="input-boxr">
-            <label for="cedyla">Numero Identificacion</label>
+            <label for="register-cedula">Numero Identificacion</label>
             <div class="input-wrapper">
-              <input type="number" v-model="registerForm.cedula" id="cedula" placeholder="xxxxxxxxxx" required />
+              <input type="number" v-model="registerForm.cedula" id="register-cedula" placeholder="xxxxxxxxxx" required />
               <span class="material-symbols-outlined icon-static">id_card</span>
             </div>
           </div>
 
           <div class="input-boxr">
-            <label for="email">Correo Electrónico</label>
+            <label for="register-email">Correo Electrónico</label>
             <div class="input-wrapper">
-              <input type="email" v-model="registerForm.correo" id="email" placeholder="mimesaya@gmail.com" required />
+              <input type="email" v-model="registerForm.correo" id="register-email" placeholder="mimesaya@gmail.com" required />
               <span class="material-symbols-outlined icon-static">mail</span>
             </div>
           </div>
 
           <div class="input-boxr">
-            <label for="telefono">Teléfono</label>
+            <label for="register-telefono">Teléfono</label>
             <div class="input-wrapper">
-              <input type="tel" v-model="registerForm.telefono" id="telefono" placeholder="xxxxxxxxxx" required />
+              <input type="tel" v-model="registerForm.telefono" id="register-telefono" placeholder="xxxxxxxxxx" required />
               <span class="material-symbols-outlined icon-static">call</span>
             </div>
           </div>
 
           <div class="input-boxr">
-            <label for="password">Contraseña</label>
+            <label for="register-password">Contraseña</label>
             <div class="input-wrapper">
-              <input :type="showRegisterPassword ? 'text' : 'password'" v-model="registerForm.password" id="password"
+              <input :type="showRegisterPassword ? 'text' : 'password'" v-model="registerForm.password" id="register-password"
                 placeholder="********" required />
               <span class="material-symbols-outlined toggle-password" @click="toggleRegisterPassword"
                 :aria-label="showRegisterPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showRegisterPassword
@@ -74,10 +74,10 @@
           </div>
 
           <div class="input-boxr">
-            <label for="confirmPassword">Confirmar Contraseña</label>
+            <label for="register-confirmPassword">Confirmar Contraseña</label>
             <div class="input-wrapper">
               <input :type="showConfirmPassword ? 'text' : 'password'" v-model="registerForm.confirmPassword"
-                id="confirmPassword" placeholder="********" required />
+                id="register-confirmPassword" placeholder="********" required />
               <span class="material-symbols-outlined toggle-password" @click="toggleConfirmPassword"
                 :aria-label="showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showConfirmPassword ?
                   'lock_open' : 'lock' }}</span>
@@ -90,7 +90,6 @@
 
       <!-- Paneles de toggle -->
       <div class="toggle-box">
-
         <div class="toggle-panel toggle-left">
           <h1>¡Bienvenido a MiMesaYa!</h1>
           <img src="@/assets/Logo/LogoCon.png" alt="MiMesaYa" />
@@ -107,7 +106,6 @@
           <p>Ya tienes cuenta, inicia sesion</p>
           <button class="btn iniciar" @click="activarLogin">Iniciar</button>
         </div>
-
       </div>
     </div>
   </main>
@@ -117,7 +115,7 @@
 import { reactive, ref } from 'vue'
 import { useAuthStore } from '@/store/auth.js'
 import Swal from 'sweetalert2'
-import { registrarUsuario } from '@/services/usuarios.js'  // <-- import
+import { registrarUsuario } from '@/services/usuarios.js'
 
 const auth = useAuthStore()
 
@@ -159,7 +157,7 @@ async function register() {
 
   try {
     const data = await registrarUsuario({
-      id_usuario: registerForm.cedula,   // 👈 agregado
+      id_usuario: registerForm.cedula,
       nombre: registerForm.nombre,
       correo: registerForm.correo,
       telefono: registerForm.telefono,
