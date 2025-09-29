@@ -44,32 +44,43 @@
   </main>
 </template>
 
-<script setup lang="ts">
-import { reactive, ref } from 'vue'
+<script setup>
+import { reactive, ref } from 'vue';
+import { enviarContacto } from '@/services/contacto';
 
 const form = reactive({
   nombre: '',
   correo: '',
   telefono: '',
-  mensaje: ''
-})
+  mensaje: '',
+});
 
-const enviado = ref(false)
+const enviado = ref(false);
 
-function enviarFormulario() {
-  console.log('Formulario enviado:', form)
-  enviado.value = true
+async function enviarFormulario() {
+  try {
+    await enviarContacto({
+      nombre: form.nombre,
+      correo: form.correo,
+      telefono: form.telefono,
+      mensaje: form.mensaje,
+    });
+    enviado.value = true;
 
-  // Resetear formulario después de enviar
-  form.nombre = ''
-  form.correo = ''
-  form.telefono = ''
-  form.mensaje = ''
+    // Reset form
+    form.nombre = '';
+    form.correo = '';
+    form.telefono = '';
+    form.mensaje = '';
 
-  // Opcional: ocultar mensaje después de unos segundos
-  setTimeout(() => {
-    enviado.value = false
-  }, 5000)
+    // Hide success message after 5 seconds
+    setTimeout(() => {
+      enviado.value = false;
+    }, 5000);
+  } catch (error) {
+    console.error('Error al enviar el formulario:', error);
+    alert('Hubo un error al enviar el formulario. Por favor, intenta de nuevo.');
+  }
 }
 </script>
 
