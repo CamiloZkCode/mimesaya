@@ -2,16 +2,19 @@ const db = require("../config/db");
 
 const AmbienteModel = {
 
+  //Para cargar en el select de filtros y en el home
   async obtenerAmbientes() {
     const [rows] = await db.query("SELECT * FROM ambientes");
     return rows;
   },
 
+  //Para cargar el perfil del ambiente seleccionado
   async obtenerAmbientexId(id) {
     const [rows] = await db.query("SELECT * FROM ambientes WHERE id_ambiente = ?", [id]);
     return rows.length > 0 ? rows[0] : null;
   },
 
+  //creacion y actualizacion de ambientes por el admin
   async CrearAmbiente(data) {
     const [result] = await db.query(
       `INSERT INTO ambientes 

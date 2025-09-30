@@ -7,7 +7,7 @@
           <label for="f-lugar">Restaurante</label>
           <select id="f-lugar" v-model="filters.restaurant">
             <option value="">Todos</option>
-            <option v-for="r in restaurants" :key="r" :value="r">{{ r }}</option>
+            <option v-for="r in restaurants" :key="r.value" :value="r.value">{{ r.label }}</option>
           </select>
         </div>
 
@@ -46,23 +46,23 @@
 
     <!-- ===== LISTADO DE MESAS ===== -->
     <section class="results" aria-live="polite">
-      <ul class="cards" v-if="filteredTables.length">
-        <li v-for="t in filteredTables" :key="t.id" class="card">
+      <ul class="cards" v-if="currentPageTables.length">
+        <li v-for="t in currentPageTables" :key="t.id_mesa" class="card">
           <article>
-            <div class="card__media" :style="{ '--img': `url(${t.image})` }"></div>
+            <div class="card__media" :style="{ '--img': `url(${t.foto_url || defaultImage})` }"></div>
             <div class="card__content">
               <header class="card__head">
-                <h3 class="card__title">Mesa #{{ t.number }}</h3>
-                <span class="badge">{{ placeLabel(t.place) }}</span>
+                <h3 class="card__title">{{ t.nombre_mesa }}</h3>
+                <span class="badge">{{ t.nombre_ambiente || '—' }}</span>
               </header>
               <dl class="card__info">
                 <div class="row">
                   <dt>Restaurante:</dt>
-                  <dd>{{ t.restaurant }}</dd>
+                  <dd>{{ t.nombre_restaurante }}</dd>
                 </div>
                 <div class="row">
                   <dt>Capacidad</dt>
-                  <dd>{{ t.capacity }} pers.</dd>
+                  <dd>{{ t.capacidad }} pers.</dd>
                 </div>
                 <div class="row">
                   <dt>Fecha</dt>
@@ -77,8 +77,18 @@
         </li>
       </ul>
 
+      <!-- Paginación -->
+      <div class="pagination" v-if="filteredTables.length > perPage">
+        <button class="btn btn--ghost" @click="prevPage" :disabled="currentPage === 1">Anterior</button>
+        <button v-for="page in totalPages" :key="page" class="btn btn--ghost"
+          :class="{ 'btn--active': page === currentPage }" @click="currentPage = page">
+          {{ page }}
+        </button>
+        <button class="btn btn--ghost" @click="nextPage" :disabled="currentPage === totalPages">Siguiente</button>
+      </div>
+
       <!-- Vacío -->
-      <div v-else class="empty">
+      <div v-else-if="filteredTables.length === 0" class="empty">
         <p>No hay mesas que coincidan con tus filtros.</p>
         <button class="btn btn--ghost" @click="suggestRelaxFilters">Sugerir ajustes</button>
       </div>
@@ -90,15 +100,15 @@
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reserva-title" ref="modalRef"
           @keydown.esc.prevent="closeModal">
           <header class="modal__header">
-            <h3 id="reserva-title">Confirmar reserva — Mesa #{{ modal.table?.number }}</h3>
+            <h3 id="reserva-title">Confirmar reserva/{{ modal.table?.nombre_mesa }}</h3>
             <button class="modal__close" @click="closeModal" aria-label="Cerrar">✕</button>
           </header>
 
           <section class="modal__body">
             <div class="modal__details">
-              <p><strong>Restaurante:</strong> {{ modal.table?.restaurant }}</p>
-              <p><strong>Lugar:</strong> {{ placeLabel(modal.table?.place) }}</p>
-              <p><strong>Capacidad:</strong> {{ modal.table?.capacity }} pers.</p>
+              <p><strong>Restaurante:</strong> {{ modal.table?.nombre_restaurante }}</p>
+              <p><strong>Lugar:</strong> {{ modal.table?.nombre_ambiente || '—' }}</p>
+              <p><strong>Capacidad:</strong> {{ modal.table?.capacidad }} pers.</p>
               <p><strong>Fecha:</strong> {{ displayDate }}</p>
               <p><strong>Hora:</strong> {{ form.time || 'A convenir' }}</p>
             </div>
@@ -135,10 +145,8 @@
                   <label for="r-ocasion">Ocasión</label>
                   <select id="r-ocasion" v-model="form.occasion">
                     <option value="">Ninguna</option>
-                    <option>Celebración</option>
-                    <option>Aniversario</option>
-                    <option>Cumpleaños</option>
-                    <option>Negocios</option>
+                    <option v-for="o in occasionOptions" :key="o.id_ocasion" :value="o.nombre_ocasion">{{
+                      o.nombre_ocasion }}</option>
                   </select>
                 </div>
 
@@ -169,91 +177,141 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
-
-const route = useRoute()
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { obtenerAmbientes } from '@/services/ambientes';
+import { obtenerRestaurantes } from '@/services/restaurante';
+import { obtenerMesasDisponibles } from '@/services/mesas';
+import { obtenerHorariosDisponibles, crearReserva } from '@/services/reservas';
+import { obtenerOcasionesPorRestaurante } from '@/services/ocasion'; // Importar el nuevo servicio
 
 /* ---------- Catálogos ---------- */
-const places = [
-  { value: 'barra', label: 'Barra' },
-  { value: 'terraza', label: 'Terraza' },
-  { value: 'salon', label: 'Salón' },
-  { value: 'privado', label: 'Privado' }
-]
-const tables = ref([
-  { id: 't-01', number: 5, place: 'barra', restaurant: 'El Sabor', capacity: 2, position: 'Cerca de la barra', features: ['Alta energía'], image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-02', number: 12, place: 'terraza', restaurant: 'La Vista', capacity: 4, position: 'Esquina con plantas', features: ['Al aire libre', 'Pet-friendly'], image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-03', number: 21, place: 'salon', restaurant: 'El Sabor', capacity: 4, position: 'Cerca a ventana', features: ['Climatizado'], image: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-04', number: 8, place: 'privado', restaurant: 'La Vista', capacity: 8, position: 'Sala privada', features: ['Privacidad'], image: 'https://images.unsplash.com/photo-1532634896-26909d0d4b6a?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-05', number: 9, place: 'salon', restaurant: 'El Sabor', capacity: 6, position: 'Centro del salón', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop' },
-  { id: 't-06', number: 2, place: 'terraza', restaurant: 'La Vista', capacity: 2, position: 'Bajo guirnaldas', image: 'https://images.unsplash.com/photo-1496412705862-e0088f16f791?q=80&w=1200&auto=format&fit=crop' }
-])
-const restaurants = computed(() => [...new Set(tables.value.map(t => t.restaurant))]) // Derivado de tables de forma reactiva
-const ambientes = places // Usamos places como base para ambientes
-const peopleOptions = Array.from({ length: 12 }, (_, i) => i + 1)
-const timeSlots = [
-  '12:00', '12:30', '13:00', '13:30', '14:00',
-  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00'
-]
+const places = ref([]);
+const restaurants = ref([]);
+const tables = ref([]);
+const defaultImage = 'https://via.placeholder.com/160';
+const peopleOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+const timeSlots = ref([]);
+const occasionOptions = ref([]); // Nuevo ref para almacenar las ocasiones dinámicas
 
-/* ---------- Estado filtros ---------- */
-const todayISO = new Date().toISOString().slice(0, 10)
-const filters = reactive({
-  restaurant: '', // Cambiado de place a restaurant
-  ambiente: '',
-  people: 0,
-  date: todayISO
-})
-const applied = reactive({ ...filters })
-function applyFilters() { Object.assign(applied, filters) }
-function clearFilters() {
-  filters.restaurant = ''
-  filters.ambiente = ''
-  filters.people = 0
-  filters.date = todayISO
-  applyFilters()
+/* ---------- Paginación ---------- */
+const perPage = 30;
+const currentPage = ref(1);
+const totalPages = computed(() => Math.ceil(filteredTables.value.length / perPage));
+const currentPageTables = computed(() => {
+  const start = (currentPage.value - 1) * perPage;
+  const end = start + perPage;
+  return filteredTables.value.slice(start, end);
+});
+
+function prevPage() {
+  if (currentPage.value > 1) currentPage.value--;
 }
 
-/* ---------- Inicializar con query.tipo ---------- */
-if (route.query.tipo && typeof route.query.tipo === 'string') {
-  filters.restaurant = route.query.tipo // Ajustado para usar restaurant
-  applied.restaurant = filters.restaurant
+function nextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+}
+
+/* ---------- Estado filtros ---------- */
+const todayISO = new Date().toISOString().slice(0, 10);
+const filters = reactive({
+  restaurant: '',
+  ambiente: '',
+  people: 0,
+  date: todayISO,
+});
+const applied = reactive({ ...filters });
+
+/* ---------- Vue Router ---------- */
+const route = useRoute();
+
+/* ---------- Cargar datos de la API ---------- */
+onMounted(async () => {
+  try {
+    // Cargar restaurantes
+    const restaurantesData = await obtenerRestaurantes();
+    restaurants.value = restaurantesData.map(r => ({
+      value: r.id_restaurante,
+      label: r.nombre_restaurante,
+    }));
+
+    // Cargar ambientes
+    const ambientesData = await obtenerAmbientes();
+    places.value = ambientesData.map(a => ({
+      value: a.id_ambiente,
+      label: a.nombre_ambiente,
+    }));
+
+    // Aplicar filtro inicial desde la URL (query.tipo)
+    if (route?.query?.tipo && typeof route.query.tipo === 'string' && restaurants.value.length) {
+      const matchingRestaurant = restaurants.value.find(r => r.label === route.query.tipo);
+      if (matchingRestaurant) {
+        filters.restaurant = matchingRestaurant.value;
+      }
+    }
+
+    // Aplicar filtros iniciales
+    await applyFilters();
+  } catch (error) {
+    console.error('Error al cargar datos:', error);
+    alert('No se pudieron cargar los restaurantes o ambientes. Intenta de nuevo más tarde.');
+  }
+
+  window.addEventListener('keydown', onKeydown);
+});
+
+onUnmounted(() => window.removeEventListener('keydown', onKeydown));
+
+async function applyFilters() {
+  Object.assign(applied, filters);
+  currentPage.value = 1;
+  try {
+    const params = {
+      id_restaurante: applied.restaurant || undefined,
+      id_ambiente: applied.ambiente || undefined,
+      min_capacidad: applied.people || undefined,
+      fecha: applied.date,
+    };
+    tables.value = await obtenerMesasDisponibles(params);
+  } catch (error) {
+    console.error('Error al cargar mesas:', error);
+    tables.value = [];
+    alert('No se pudieron cargar las mesas disponibles. Intenta de nuevo.');
+  }
+}
+
+function clearFilters() {
+  filters.restaurant = '';
+  filters.ambiente = '';
+  filters.people = 0;
+  filters.date = todayISO;
+  applyFilters();
 }
 
 /* ---------- Computados ---------- */
-const filteredTables = computed(() =>
-  tables.value.filter(t => {
-    if (applied.restaurant && t.restaurant !== applied.restaurant) return false // Filtra por restaurante
-    if (applied.ambiente && t.place !== applied.ambiente) return false // Filtra por ambiente
-    if (applied.people && t.capacity < applied.people) return false
-    return true
-  })
-)
+const filteredTables = computed(() => tables.value);
+
 const filtersSummary = computed(() => {
-  const parts = []
-  if (applied.restaurant) parts.push(applied.restaurant) // Mostrar nombre del restaurante
-  if (applied.ambiente) parts.push(placeLabel(applied.ambiente)) // Usar placeLabel para ambiente
-  if (applied.people) parts.push(`${applied.people} pers.`)
-  if (applied.date !== todayISO) parts.push(applied.date)
-  return parts.join(' · ')
-})
-const displayDate = computed(() => applied.date.split('-').reverse().join('/'))
+  const parts = [];
+  if (applied.restaurant) {
+    const restaurant = restaurants.value.find(r => r.value === applied.restaurant);
+    if (restaurant) parts.push(restaurant.label);
+  }
+  if (applied.ambiente) {
+    const ambiente = places.value.find(p => p.value === applied.ambiente);
+    if (ambiente) parts.push(ambiente.label);
+  }
+  if (applied.people) parts.push(`${applied.people} pers.`);
+  if (applied.date !== todayISO) parts.push(applied.date.split('-').reverse().join('/'));
+  return parts.join(' · ');
+});
 
-function placeLabel(v) {
-  const m = places.find(p => p.value === v)
-  return m ? m.label : '—'
-}
-
-function ambienteLabel(v) {
-  const m = places.find(p => p.value === v) // Usar places para consistencia
-  return m ? m.label : '—'
-}
+const displayDate = computed(() => applied.date.split('-').reverse().join('/'));
 
 /* ---------- Modal ---------- */
-const modal = reactive({ open: false, table: null })
-const modalRef = ref(null)
-const formError = ref('')
+const modal = reactive({ open: false, table: null });
+const modalRef = ref(null);
+const formError = ref('');
 
 const form = reactive({
   name: '',
@@ -263,68 +321,89 @@ const form = reactive({
   occasion: '',
   notes: '',
   whatsapp: false,
-  acceptsPolicy: false
-})
+  acceptsPolicy: false,
+});
 
-function openModal(t) {
-  modal.table = t
-  modal.open = true
-  formError.value = ''
+async function openModal(t) {
+  modal.table = t;
+  modal.open = true;
+  formError.value = '';
   if (!form.notes) {
-    form.notes = `Reserva para ${applied.people || t.capacity} personas en ${placeLabel(t.place)}.`
+    form.notes = `Reserva para ${applied.people || t.capacidad} personas en ${t.nombre_ambiente || '—'}.`;
+  }
+  try {
+    // Cargar horarios disponibles
+    timeSlots.value = await obtenerHorariosDisponibles(t.id_mesa, applied.date);
+
+    // Cargar ocasiones para el restaurante de la mesa
+    const ocasiones = await obtenerOcasionesPorRestaurante(t.id_restaurante);
+    occasionOptions.value = ocasiones.map(o => ({
+      id_ocasion: o.id_ocasion,
+      nombre_ocasion: o.nombre_ocasion,
+    }));
+  } catch (error) {
+    console.error('Error al cargar datos:', error);
+    timeSlots.value = [];
+    occasionOptions.value = [];
+    formError.value = error.message || 'No hay horarios ni ocasiones disponibles para esta mesa.';
   }
   requestAnimationFrame(() => {
-    modalRef.value?.querySelector('#r-nombre')?.focus()
-  })
-  document.body.style.overflow = 'hidden'
+    modalRef.value?.querySelector('#r-nombre')?.focus();
+  });
+  document.body.style.overflow = 'hidden';
 }
+
 function closeModal() {
-  modal.open = false
-  form.time = '' // Resetear hora al cerrar
-  formError.value = ''
-  document.body.style.overflow = ''
+  modal.open = false;
+  form.time = '';
+  form.occasion = '';
+  formError.value = '';
+  document.body.style.overflow = '';
 }
-function submitReservation() {
+
+async function submitReservation() {
   if (!form.name || !form.phone || !form.email || !form.time) {
-    formError.value = 'Por favor, completa todos los campos requeridos.'
-    return
+    formError.value = 'Por favor, completa todos los campos requeridos.';
+    return;
   }
   if (!form.acceptsPolicy) {
-    formError.value = 'Debes aceptar la política de privacidad.'
-    return
+    formError.value = 'Debes aceptar la política de privacidad.';
+    return;
   }
+  const selectedOccasion = occasionOptions.value.find(o => o.nombre_ocasion === form.occasion);
   const payload = {
-    tableId: modal.table?.id,
-    tableNumber: modal.table?.number,
-    place: modal.table?.place,
-    restaurant: modal.table?.restaurant,
-    date: applied.date,
-    people: Math.max(applied.people, modal.table?.capacity || 0),
-    ...form
+    id_usuario: null, // Ajusta si tienes autenticación
+    id_restaurante: modal.table.id_restaurante,
+    id_mesa: modal.table.id_mesa,
+    id_ocasion: selectedOccasion ? selectedOccasion.id_ocasion : 1, // Usa id_ocasion o 1 por defecto
+    fecha_inicio: `${applied.date} ${form.time}:00`,
+    notas: `Nombre: ${form.name}, Teléfono: ${form.phone}, Email: ${form.email}, Notas: ${form.notes}`,
+  };
+  try {
+    await crearReserva(payload);
+    alert(`¡Reserva registrada para la Mesa #${modal.table.nombre_mesa} en ${modal.table.nombre_restaurante}! Te contactaremos pronto.`);
+    closeModal();
+    await applyFilters(); // Refrescar mesas disponibles
+  } catch (error) {
+    console.error('Error al crear reserva:', error);
+    formError.value = error.message || 'Error al crear la reserva. Intenta de nuevo.';
   }
-  console.info('Reserva enviada (fake):', payload)
-  alert(`¡Reserva registrada para la Mesa #${payload.tableNumber} en ${payload.restaurant}! Te contactaremos pronto.`)
-  closeModal()
 }
 
 /* ---------- Extras UI ---------- */
-function suggestRelaxFilters() {
-  if (applied.people > 0) filters.people = Math.max(0, applied.people - 1)
-  filters.restaurant = '' // Ajustado para usar restaurant
-  filters.ambiente = ''
-  applyFilters()
+async function suggestRelaxFilters() {
+  if (applied.people > 0) filters.people = Math.max(0, applied.people - 1);
+  filters.restaurant = '';
+  filters.ambiente = '';
+  await applyFilters();
 }
 
 /* ---------- UX: ESC para cerrar modal ---------- */
 function onKeydown(e) {
-  if (e.key === 'Escape' && modal.open) closeModal()
+  if (e.key === 'Escape' && modal.open) closeModal();
 }
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
-
-// Inicial
-applyFilters()
 </script>
+
 
 <style scoped>
 /* ===== Layout base ===== */
@@ -404,7 +483,7 @@ applyFilters()
   grid-column: span 12;
 }
 
-.card > article {
+.card>article {
   background: var(--color-blanco);
   border-radius: var(--border-radius-3);
   box-shadow: var(--box-shadow);
@@ -412,7 +491,7 @@ applyFilters()
   display: grid;
   grid-template-columns: 160px 1fr;
   align-items: start;
-  height: 160px; /* Altura fija para todas las cartas */
+  height: 160px;
 }
 
 .card__media {
@@ -439,7 +518,7 @@ applyFilters()
 .card__title {
   margin: 0;
   color: var(--color-oscuro);
-  font-size: 1.05rem;
+  font-size: 1.0rem;
 }
 
 .badge {
@@ -485,6 +564,21 @@ applyFilters()
   margin-bottom: 0;
 }
 
+/* ===== Paginación ===== */
+.pagination {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.btn--active {
+  background: var(--color-azul-1);
+  color: var(--color-blanco);
+  border-color: var(--color-azul-1);
+}
+
 /* ===== Empty ===== */
 .empty {
   background: var(--color-blanco);
@@ -499,8 +593,8 @@ applyFilters()
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .45);
-  backdrop-filter: blur(5px); /* Efecto de desenfoque */
-  -webkit-backdrop-filter: blur(5px); /* Soporte para navegadores WebKit */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: grid;
   place-items: center;
   padding: 1rem;
@@ -510,18 +604,19 @@ applyFilters()
 .modal {
   background: var(--color-blanco);
   width: min(820px, 100%);
-  max-height: 90vh; /* Limita la altura al 90% de la ventana */
-  overflow-y: auto; /* Habilita desplazamiento vertical */
+  max-height: 90vh;
+  overflow-y: auto;
   border-radius: var(--card-border-radius);
   box-shadow: var(--box-shadow);
 }
 
 .modal {
-  scrollbar-width: none; 
-  -ms-overflow-style: none; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+
 .modal::-webkit-scrollbar {
-  display: none; 
+  display: none;
 }
 
 .modal__header {

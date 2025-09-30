@@ -1,6 +1,7 @@
 const db = require("../config/db");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
+//Crear Usuario como cliente normal
 async function crearUsuario({
   id_usuario,
   nombre,
@@ -17,6 +18,7 @@ async function crearUsuario({
   return result.insertId;
 }
 
+// Buscar por correo
 async function busquedaxCorreoUsuario(correo) {
   const [rows] = await db.query(
     `SELECT u.id_usuario, u.nombre, u.telefono, u.correo, u.contraseña_hash, u.id_rol, r.rol
