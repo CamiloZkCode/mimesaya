@@ -18,3 +18,12 @@ export async function obtenerHorariosDisponibles(id_mesa, fecha) {
     throw err.response?.data || err;
   }
 }
+
+export async function confirmarReserva(sessionId) {
+  try {
+    const res = await API.get(`/reservas/confirmar-reserva?session_id=${sessionId}`);
+    return res.data; // Devuelve { message }
+  } catch (err) {
+    throw err.response?.data || { message: "Error al confirmar la reserva" };
+  }
+}

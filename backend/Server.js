@@ -13,12 +13,12 @@ const RestauranteRoutes = require('./routes/restaurante.routes');
 const MesaRoutes = require('./routes/mesa.routes');
 const reservarRoutes = require('./routes/reservas.routes');
 const ocasionRoutes = require('./routes/ocasion.routes');
-const stripeWebhookRoutes = require('./routes/stripeWebhook.routes');
 
 
 
 const app = express();
 app.use(cors());
+app.use('/webhook-stripe', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 
@@ -29,7 +29,6 @@ app.use('/api/restaurantes', RestauranteRoutes);
 app.use('/api/mesas', MesaRoutes);
 app.use('/api/reservas',reservarRoutes );
 app.use('/api/ocasion',ocasionRoutes );
-app.use('/api/stripe', stripeWebhookRoutes);
 
 
 const PORT = process.env.PORT || 3000;

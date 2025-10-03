@@ -111,6 +111,9 @@
               <p><strong>Capacidad:</strong> {{ modal.table?.capacidad }} pers.</p>
               <p><strong>Fecha:</strong> {{ displayDate }}</p>
               <p><strong>Hora:</strong> {{ form.time || 'A convenir' }}</p>
+              <p><strong>Usuario:</strong> {{ userData.nombre || 'Cargando...' }}</p>
+              <p><strong>Correo:</strong> {{ userData.correo || 'Cargando...' }}</p>
+              <p><strong>Teléfono:</strong> {{ userData.telefono || 'Cargando...' }}</p>
             </div>
 
             <form class="form" @submit.prevent="submitReservation">
@@ -118,21 +121,6 @@
                 {{ formError }}
               </div>
               <div class="grid">
-                <div class="field">
-                  <label for="r-nombre">Nombre completo</label>
-                  <input id="r-nombre" v-model.trim="form.name" required autocomplete="name" />
-                </div>
-
-                <div class="field">
-                  <label for="r-telefono">Teléfono</label>
-                  <input id="r-telefono" v-model.trim="form.phone" inputmode="tel" required autocomplete="tel" />
-                </div>
-
-                <div class="field">
-                  <label for="r-email">Correo</label>
-                  <input id="r-email" v-model.trim="form.email" type="email" required autocomplete="email" />
-                </div>
-
                 <div class="field">
                   <label for="r-hora">Hora</label>
                   <select id="r-hora" v-model="form.time" required>
@@ -143,11 +131,16 @@
 
                 <div class="field">
                   <label for="r-ocasion">Ocasión</label>
-                  <select id="r-ocasion" v-model="form.occasion">
-                    <option value="">Ninguna</option>
-                    <option v-for="o in occasionOptions" :key="o.id_ocasion" :value="o.nombre_ocasion">{{
-                      o.nombre_ocasion }}</option>
+                  <select id="r-ocasion" v-model="form.occasionId" @change="actualizarPrecio">
+                    <option :value="null">Ninguna (3.000 COP)</option>
+                    <option v-for="o in occasionOptions" :key="o.id_ocasion" :value="o.id_ocasion">
+                      {{ o.nombre_ocasion }} - {{ o.precio_ocasion }} COP
+                    </option>
                   </select>
+                </div>
+
+                <div class="field" style="grid-column: 1 / -1;">
+                  <p><strong>Total a pagar:</strong> {{ precioSeleccionado }} COP</p>
                 </div>
 
                 <div class="field" style="grid-column: 1 / -1;">
@@ -178,12 +171,21 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { obtenerAmbientes } from '@/services/ambientes';
 import { obtenerRestaurantes } from '@/services/restaurante';
 import { obtenerMesasDisponibles } from '@/services/mesas';
-import { obtenerHorariosDisponibles, crearReserva } from '@/services/reservas';
-import { obtenerOcasionesPorRestaurante } from '@/services/ocasion'; // Importar el nuevo servicio
+import { obtenerHorariosDisponibles, crearReserva, confirmarReserva } from '@/services/reservas';
+import { obtenerOcasionesPorRestaurante } from '@/services/ocasion';
+import { obtenerUsuario } from '@/services/usuarios';
+import Swal from 'sweetalert2';
+
+/* ---------- Estado del usuario ---------- */
+const userData = reactive({
+  nombre: '',
+  telefono: '',
+  correo: '',
+});
 
 /* ---------- Catálogos ---------- */
 const places = ref([]);
@@ -192,7 +194,7 @@ const tables = ref([]);
 const defaultImage = 'https://via.placeholder.com/160';
 const peopleOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 const timeSlots = ref([]);
-const occasionOptions = ref([]); // Nuevo ref para almacenar las ocasiones dinámicas
+const occasionOptions = ref([]);
 
 /* ---------- Paginación ---------- */
 const perPage = 30;
@@ -224,10 +226,40 @@ const applied = reactive({ ...filters });
 
 /* ---------- Vue Router ---------- */
 const route = useRoute();
+const router = useRouter();
 
-/* ---------- Cargar datos de la API ---------- */
+/* ---------- Precio dinámico ---------- */
+const precioSeleccionado = ref(3000);
+
+function actualizarPrecio() {
+  const selectedOption = occasionOptions.value.find(o => o.id_ocasion === form.occasionId);
+  precioSeleccionado.value = selectedOption ? selectedOption.precio_ocasion : 3000;
+}
+
+/* ---------- Cargar datos iniciales ---------- */
 onMounted(async () => {
   try {
+    // Cargar datos del usuario
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const usuario = await obtenerUsuario();
+        userData.nombre = usuario.nombre;
+        userData.telefono = usuario.telefono;
+        userData.correo = usuario.correo;
+      } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los datos del usuario. Por favor, inicia sesión nuevamente.',
+          icon: 'error',
+          confirmButtonText: 'OK',
+        }).then(() => {
+          router.push('/login');
+        });
+      }
+    }
+
     // Cargar restaurantes
     const restaurantesData = await obtenerRestaurantes();
     restaurants.value = restaurantesData.map(r => ({
@@ -242,7 +274,7 @@ onMounted(async () => {
       label: a.nombre_ambiente,
     }));
 
-    // Aplicar filtro inicial desde la URL (query.tipo)
+    // Aplicar filtro inicial desde la URL
     if (route?.query?.tipo && typeof route.query.tipo === 'string' && restaurants.value.length) {
       const matchingRestaurant = restaurants.value.find(r => r.label === route.query.tipo);
       if (matchingRestaurant) {
@@ -252,9 +284,14 @@ onMounted(async () => {
 
     // Aplicar filtros iniciales
     await applyFilters();
+
+    // Verificar si estamos en la página de éxito
+    if (route.path === '/reserva/success') {
+      await handleSuccess();
+    }
   } catch (error) {
     console.error('Error al cargar datos:', error);
-    alert('No se pudieron cargar los restaurantes o ambientes. Intenta de nuevo más tarde.');
+    Swal.fire('Error', 'No se pudieron cargar los datos. Intenta de nuevo.', 'error');
   }
 
   window.addEventListener('keydown', onKeydown);
@@ -276,7 +313,7 @@ async function applyFilters() {
   } catch (error) {
     console.error('Error al cargar mesas:', error);
     tables.value = [];
-    alert('No se pudieron cargar las mesas disponibles. Intenta de nuevo.');
+    Swal.fire('Error', 'No se pudieron cargar las mesas disponibles.', 'error');
   }
 }
 
@@ -314,13 +351,9 @@ const modalRef = ref(null);
 const formError = ref('');
 
 const form = reactive({
-  name: '',
-  phone: '',
-  email: '',
   time: '',
-  occasion: '',
+  occasionId: null,
   notes: '',
-  whatsapp: false,
   acceptsPolicy: false,
 });
 
@@ -335,12 +368,10 @@ async function openModal(t) {
     // Cargar horarios disponibles
     timeSlots.value = await obtenerHorariosDisponibles(t.id_mesa, applied.date);
 
-    // Cargar ocasiones para el restaurante de la mesa
+    // Cargar ocasiones para el restaurante
     const ocasiones = await obtenerOcasionesPorRestaurante(t.id_restaurante);
-    occasionOptions.value = ocasiones.map(o => ({
-      id_ocasion: o.id_ocasion,
-      nombre_ocasion: o.nombre_ocasion,
-    }));
+    occasionOptions.value = ocasiones;
+    actualizarPrecio();
   } catch (error) {
     console.error('Error al cargar datos:', error);
     timeSlots.value = [];
@@ -348,7 +379,7 @@ async function openModal(t) {
     formError.value = error.message || 'No hay horarios ni ocasiones disponibles para esta mesa.';
   }
   requestAnimationFrame(() => {
-    modalRef.value?.querySelector('#r-nombre')?.focus();
+    modalRef.value?.querySelector('#r-hora')?.focus();
   });
   document.body.style.overflow = 'hidden';
 }
@@ -356,41 +387,74 @@ async function openModal(t) {
 function closeModal() {
   modal.open = false;
   form.time = '';
-  form.occasion = '';
+  form.occasionId = null;
+  form.notes = '';
+  form.acceptsPolicy = false;
   formError.value = '';
   document.body.style.overflow = '';
 }
 
 async function submitReservation() {
-  if (!form.name || !form.phone || !form.email || !form.time) {
-    formError.value = 'Por favor, completa todos los campos requeridos.';
+  const token = localStorage.getItem('token');
+  if (!token) {
+    Swal.fire({
+      title: 'Inicia sesión',
+      text: 'Debes iniciar sesión para continuar con la reserva.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Iniciar sesión',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.push('/login');
+      }
+    });
     return;
   }
-  if (!form.acceptsPolicy) {
-    formError.value = 'Debes aceptar la política de privacidad.';
+
+  if (!form.time || !form.acceptsPolicy) {
+    formError.value = 'Por favor, selecciona una hora y acepta la política de privacidad.';
     return;
   }
-  const selectedOccasion = occasionOptions.value.find(o => o.nombre_ocasion === form.occasion);
+
   const payload = {
-    id_usuario: null, // Ajusta si tienes autenticación
     id_restaurante: modal.table.id_restaurante,
     id_mesa: modal.table.id_mesa,
-    id_ocasion: selectedOccasion ? selectedOccasion.id_ocasion : 1, // Usa id_ocasion o 1 por defecto
+    id_ocasion: form.occasionId || null,
     fecha_inicio: `${applied.date} ${form.time}:00`,
-    notas: `Nombre: ${form.name}, Teléfono: ${form.phone}, Email: ${form.email}, Notas: ${form.notes}`,
+    notas: form.notes,
   };
+
   try {
-    await crearReserva(payload);
-    alert(`¡Reserva registrada para la Mesa #${modal.table.nombre_mesa} en ${modal.table.nombre_restaurante}! Te contactaremos pronto.`);
-    closeModal();
-    await applyFilters(); // Refrescar mesas disponibles
+    const { checkoutUrl } = await crearReserva(payload);
+    window.location.href = checkoutUrl;
   } catch (error) {
     console.error('Error al crear reserva:', error);
     formError.value = error.message || 'Error al crear la reserva. Intenta de nuevo.';
+    Swal.fire('Error', formError.value, 'error');
   }
 }
 
-/* ---------- Extras UI ---------- */
+async function handleSuccess() {
+  const sessionId = route.query.session_id;
+  if (sessionId) {
+    try {
+      await confirmarReserva(sessionId);
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Tu reserva fue confirmada exitosamente.',
+        icon: 'success',
+        confirmButtonText: 'OK',
+      }).then(() => {
+        router.push('/');
+      });
+    } catch (error) {
+      console.error('Error al confirmar reserva:', error);
+      Swal.fire('Error', error.message || 'No se pudo confirmar la reserva.', 'error');
+    }
+  }
+}
+
 async function suggestRelaxFilters() {
   if (applied.people > 0) filters.people = Math.max(0, applied.people - 1);
   filters.restaurant = '';
@@ -398,22 +462,18 @@ async function suggestRelaxFilters() {
   await applyFilters();
 }
 
-/* ---------- UX: ESC para cerrar modal ---------- */
 function onKeydown(e) {
   if (e.key === 'Escape' && modal.open) closeModal();
 }
 </script>
 
-
 <style scoped>
-/* ===== Layout base ===== */
 .reservas {
   display: grid;
   gap: 1.25rem;
   padding: 1rem;
 }
 
-/* ===== Filtros ===== */
 .filters {
   background: var(--color-blanco);
   border-radius: var(--card-border-radius);
@@ -464,7 +524,6 @@ function onKeydown(e) {
   font-size: .95rem;
 }
 
-/* ===== Cards ===== */
 .results {
   max-width: 1200px;
   margin: 0 auto;
@@ -564,7 +623,6 @@ function onKeydown(e) {
   margin-bottom: 0;
 }
 
-/* ===== Paginación ===== */
 .pagination {
   display: flex;
   gap: 0.5rem;
@@ -579,7 +637,6 @@ function onKeydown(e) {
   border-color: var(--color-azul-1);
 }
 
-/* ===== Empty ===== */
 .empty {
   background: var(--color-blanco);
   border-radius: var(--card-border-radius);
@@ -588,7 +645,6 @@ function onKeydown(e) {
   text-align: center;
 }
 
-/* ===== Modal ===== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -744,7 +800,6 @@ function onKeydown(e) {
   padding-top: .5rem;
 }
 
-/* ===== Botones reutilizables ===== */
 .btn {
   --_pad: .6rem 1rem;
   padding: var(--_pad);
@@ -811,9 +866,7 @@ function onKeydown(e) {
   }
 
   .form .field:nth-child(1),
-  .form .field:nth-child(2),
-  .form .field:nth-child(3),
-  .form .field:nth-child(4) {
+  .form .field:nth-child(2) {
     grid-column: span 6;
   }
 }

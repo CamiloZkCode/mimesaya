@@ -1,4 +1,3 @@
-// models/ocasion.models.js
 const db = require("../config/db");
 
 const OcasionModel = {
@@ -38,6 +37,17 @@ const OcasionModel = {
     );
     return rows.length > 0 ? rows[0] : null;
   },
+
+  async obtenerOcasionesPorAdmin(id_admin) {
+    const [rows] = await db.query(
+      `SELECT o.id_ocasion, o.nombre_ocasion, o.precio_ocasion, o.moneda, o.stripe_product_id, o.stripe_price_id
+       FROM ocasion o
+       INNER JOIN restaurantes r ON o.id_restaurante = r.id_restaurante
+       WHERE r.id_admin = ?`,
+      [id_admin]
+    );
+    return rows;
+  }
 };
 
 module.exports = OcasionModel;

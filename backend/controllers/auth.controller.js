@@ -174,4 +174,27 @@ async function registrarAdministrador(req, res) {
   }
 }*/
 
-module.exports = { login, registrar, registrarAdministrador };
+
+const obtenerUsuario = async (req, res) => {
+  try {
+    const id_usuario = req.user.id_usuario;
+    const usuario = await busquedaxIdUsuario(id_usuario);
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    res.json({
+      user: {
+        id_usuario: usuario.id_usuario,
+        nombre: usuario.nombre,
+        telefono: usuario.telefono,
+        correo: usuario.correo,
+        rol: usuario.rol,
+      },
+    });
+  } catch (error) {
+    console.error('Error al obtener usuario:', error);
+    res.status(500).json({ message: 'Error al obtener datos del usuario' });
+  }
+};
+
+module.exports = { login, registrar, registrarAdministrador, obtenerUsuario };

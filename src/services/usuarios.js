@@ -18,3 +18,12 @@ export async function registrarAdministrador(formData) {
     throw err.response?.data || err;
   }
 }
+
+export async function obtenerUsuario() {
+  try {
+    const res = await API.get('/auth/me');
+    return res.data.user;
+  } catch (err) {
+    throw err.response?.data || { message: 'Error al obtener datos del usuario' };
+  }
+}

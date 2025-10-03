@@ -60,3 +60,16 @@ export async function eliminarMesa(id) {
     throw err.response?.data || err;
   }
 }
+
+
+// Obtener mesas del admin logueado
+export async function obtenerMisMesas() {
+  try {
+    const res = await API.get("/mesas/mis-mesas"); // coincide con tu ruta protegida en backend
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+}
+
+

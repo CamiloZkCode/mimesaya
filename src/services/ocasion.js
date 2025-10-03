@@ -19,3 +19,14 @@ export async function obtenerOcasionesPorRestaurante(id_restaurante) {
     throw err.response?.data || err;
   }
 }
+
+// Ocasiones del admin logueado
+export async function obtenerMisOcasiones() {
+  try {
+    const res = await API.get("/ocasion/mis-ocasiones");
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+}
+
