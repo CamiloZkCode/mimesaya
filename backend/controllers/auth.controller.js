@@ -121,6 +121,7 @@ async function registrarAdministrador(req, res) {
       direccion: restaurante.direccion,
       telefono: restaurante.telefono,
       logo: restaurante.logo,
+      id_tipo: restaurante.id_tipo,
       id_admin,
       stripe_account_id: account.id,
     });
@@ -142,37 +143,6 @@ async function registrarAdministrador(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
-
-/*sync function generarLoginStripe(req, res) {
-  try {
-    const { idRestaurante } = req.params;
-
-    // 🔎 Buscar restaurante en la BD
-    const [restaurante] = await require("../config/db").query(
-      "SELECT stripe_account_id FROM restaurantes WHERE nit_restaurante = ?",
-      [idRestaurante]
-    );
-
-    if (!restaurante || restaurante.length === 0) {
-      return res.status(404).json({ error: "Restaurante no encontrado" });
-    }
-
-    const stripeAccountId = restaurante[0].stripe_account_id;
-
-    // 🔗 Crear un nuevo login link en Stripe
-    const loginLink = await stripe.accountLinks.create({
-      account: stripeAccountId,
-      refresh_url: "http://localhost:5173/stripe/refresh",
-      return_url: "http://localhost:5173/stripe/success",
-      type: "account_update", // Para entrar al dashboard
-    });
-
-    res.json({ url: loginLink.url });
-  } catch (error) {
-    console.error("Error generando login link:", error);
-    res.status(500).json({ error: error.message });
-  }
-}*/
 
 
 const obtenerUsuario = async (req, res) => {

@@ -1,12 +1,20 @@
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const OcasionModel = require("../models/ocasion.models");
 const db = require("../config/db");
+const OcasionModel = require("../models/ocasion.models");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const OcasionController = {
   async crearOcasion(req, res) {
     try {
-      const id_admin = req.user.id_usuario; 
-      const { nombre_ocasion, precio_ocasion, moneda } = req.body;
+      const id_admin = req.user.id_usuario;
+      const { nombre_ocasion, precio_ocasion, moneda, duracion_min_horas } = req.body;
+
+      // Validar entrada
+      if (!nombre_ocasion || !precio_ocasion || !moneda || !duracion_min_horas) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
+      }
+      if (!Number.isInteger(duracion_min_horas) || duracion_min_horas < 1) {
+        return res.status(400).json({ error: "La duración mínima debe ser un entero positivo" });
+      }
 
       // Buscar el restaurante del admin
       const [restaurante] = await db.query(
@@ -30,11 +38,13 @@ const OcasionController = {
         product: product.id,
       });
 
+      // Crear la ocasión en la BD
       const id = await OcasionModel.crearOcasion({
         id_restaurante,
         nombre_ocasion,
         precio_ocasion,
         moneda,
+        duracion_min_horas,
         stripe_product_id: product.id,
         stripe_price_id: price.id,
       });
@@ -48,7 +58,7 @@ const OcasionController = {
 
   async obtenerOcasionesAdmin(req, res) {
     try {
-      const id_admin = req.user.id_usuario; 
+      const id_admin = req.user.id_usuario;
       const ocasiones = await OcasionModel.obtenerOcasionesPorAdmin(id_admin);
       res.json(ocasiones);
     } catch (err) {

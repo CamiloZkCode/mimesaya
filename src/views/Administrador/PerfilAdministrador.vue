@@ -67,36 +67,34 @@ export default {
   flex-shrink: 0; /* mantiene tamaño fijo */
 }
 .restaurante-logo img {
-  width: 300px;   /* más grande */
-  height: 300px;
+  width: 200px;   
+  height: 200px;
   border-radius: 20px;
   object-fit: cover;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
-  margin-left: -1rem; /* 👈 pegamos más a la izquierda */
+  margin-left: -1rem; 
 }
 
-/* Contenedor de la info */
 .perfil-info {
   flex: 1;
   display: flex;
   flex-direction: column; /* en filas */
-  gap: 2rem;
+  gap: 1rem;
 }
 
-/* Tarjetas de info */
 .admin-info,
 .restaurante-info {
   background: var(--color-blanco, #fff);
   border-radius: 16px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
-  padding: 2rem 3rem; /* más ancho */
-  width: 100%; /* ocupa todo el espacio disponible */
+  padding: 2rem 3rem; 
+  width: 100%; 
 }
 
 .admin-info h2,
 .restaurante-info h2 {
   margin: 0 0 1rem;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: var(--color-oscuro, #222);
 }
 
@@ -105,5 +103,44 @@ export default {
   font-size: 1.2rem;
   margin: .5rem 0;
   color: #333;
+}
+
+@media (max-width: 768px) {
+  .perfil-admin {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .restaurante-logo {
+    margin: 0 auto; 
+  }
+
+  .restaurante-logo img {
+    margin-left: 0; 
+    width: 150px; 
+    height: 150px;
+  }
+
+  .perfil-info {
+    width: 100%; 
+    align-items: center; 
+  }
+
+  .admin-info,
+  .restaurante-info {
+    width: 100%; 
+    max-width: 500px;
+  }
+
+  .admin-info h2,
+  .restaurante-info h2 {
+    text-align: center;
+    font-size: 1.4rem; 
+  }
+
+  .admin-info p,
+  .restaurante-info p {
+    font-size: 1rem; 
+  }
 }
 </style>

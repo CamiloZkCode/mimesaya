@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const OcasionModel = require("../models/ocasion.models");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 //Crear Usuario como cliente normal
@@ -80,6 +81,7 @@ async function crearRestaurante({
   logo,
   id_admin,
   stripe_account_id,
+   id_tipo,
 }) {
   // Verificar NIT duplicado
   const [existe] = await db.query(
@@ -92,8 +94,8 @@ async function crearRestaurante({
 
   const [result] = await db.query(
     `INSERT INTO restaurantes 
-     (nit_restaurante, nombre_restaurante, direccion_restaurante, telefono_restaurante, logo_restaurante, id_admin, stripe_account_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+     (nit_restaurante, nombre_restaurante, direccion_restaurante, telefono_restaurante, logo_restaurante, id_admin, stripe_account_id, id_tipo)
+     VALUES (?, ?, ?, ?, ?, ?, ?,?)`,
     [
       nit,
       nombre_restaurante,
@@ -102,21 +104,36 @@ async function crearRestaurante({
       logo,
       id_admin,
       stripe_account_id,
+       id_tipo,
     ]
   );
 
-  return result.insertId;
+  const id_restaurante = result.insertId;
+
+  // NUEVA LÓGICA: Crear ocasión default después de insertar el restaurante
+  try {
+    await OcasionModel.crearOcasionDefault(id_restaurante);
+  } catch (error) {
+    console.error('Error al crear ocasión default:', error);
+    // Opcional: Lanzar error o continuar (aquí continuamos, pero puedes throw si es crítico)
+  }
+
+  return id_restaurante; // Ahora retorna el ID del restaurante
 }
 
 // Crear cuenta Stripe Express
 async function crearCuentaStripeExpress(email) {
   const account = await stripe.accounts.create({
     type: "express",
-    country: "US",
+    country: "CO", // Cambié a CO para Colombia
     email,
+    business_type: "individual", // Asumiendo persona natural
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
+    },
+    tos_acceptance: {
+      service_agreement: "recipient",
     },
   });
 

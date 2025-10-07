@@ -18,7 +18,13 @@ const ocasionRoutes = require('./routes/ocasion.routes');
 
 const app = express();
 app.use(cors());
-app.use('/webhook-stripe', express.raw({ type: 'application/json' }));
+
+app.post(
+  "/api/reservas/webhook-stripe",
+  express.raw({ type: "application/json" }),
+  require("./controllers/reservas.controller").stripeWebhook
+);
+
 app.use(express.json());
 
 

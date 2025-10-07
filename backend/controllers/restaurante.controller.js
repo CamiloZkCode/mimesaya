@@ -2,6 +2,17 @@
 const RestauranteModel = require("../models/restaurante.models");
 
 const restauranteController = {
+
+   async obtenerTiposRestaurante(req, res) {
+    try {
+      const tipos = await RestauranteModel.obtenerTiposRestaurante();
+      res.json(tipos);
+    } catch (error) {
+      console.error("Error al obtener tipos de restaurante:", error);
+      res.status(500).json({ error: "Error al obtener los tipos de restaurante" });
+    }
+  },
+  
   // Obtener todos los restaurantes (para cargar el select)
   async obtenerRestaurantes(req, res) {
     try {

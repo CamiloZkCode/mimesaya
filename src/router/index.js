@@ -14,6 +14,9 @@ import RegistrarRestaurante from "@/views/RegistrarRestaurante.vue";
 
 // Cliente
 import PerfilCliente from "@/views/Cliente/PerfilCliente.vue";
+import ReservaSuccess from "@/views/Cliente/ReservaConfirmada.vue";
+import ReservaCancel from "@/views/Cliente/ReservaCancelada.vue";
+
 
 // Administrador
 import GestionarReservas from "@/views/Administrador/GestionarReservas.vue";
@@ -29,7 +32,9 @@ const routes = [
     children: [
       { path: "", name: "Home", component: Home },
       { path: "reservas", name: "Reservas", component: Reservas },
-      { path: "contacto", name: "Contacto", component: Contacto }
+      { path: "contacto", name: "Contacto", component: Contacto },
+      { path: "reserva/success", name: "ReservaSuccess", component: ReservaSuccess },
+      { path: "reserva/cancel", name: "ReservaCancel", component: ReservaCancel },
     ],
   },
 

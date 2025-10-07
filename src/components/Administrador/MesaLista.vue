@@ -1,4 +1,3 @@
-<!-- frontend/src/views/GestionOcasiones.vue -->
 <template>
   <main class="gestion-mesas">
     <!-- ===== GESTIONAR OCASIONES ===== -->
@@ -27,6 +26,10 @@
                 <div class="row">
                   <dt>Moneda:</dt>
                   <dd>{{ ocasion.moneda }}</dd>
+                </div>
+                <div class="row">
+                  <dt>Duración mínima:</dt>
+                  <dd>{{ ocasion.duracion_min_horas }} h</dd>
                 </div>
               </dl>
             </div>
@@ -90,15 +93,32 @@
               <div class="grid">
                 <div class="field">
                   <label for="nombre_ocasion">Nombre</label>
-                  <input id="nombre_ocasion" v-model="formOcasion.nombre_ocasion" required />
+                  <div class="input-wrapper">
+                    <input id="nombre_ocasion" v-model="formOcasion.nombre_ocasion" required />
+                    <span class="material-symbols-outlined icon-static">event</span>
+                  </div>
                 </div>
                 <div class="field">
                   <label for="precio_ocasion">Precio</label>
-                  <input id="precio_ocasion" type="number" step="0.01" v-model="formOcasion.precio_ocasion" required />
+                  <div class="input-wrapper">
+                    <input id="precio_ocasion" type="number" step="0.01" v-model="formOcasion.precio_ocasion" required />
+                    <span class="material-symbols-outlined icon-static">attach_money</span>
+                  </div>
                 </div>
                 <div class="field">
                   <label for="moneda">Moneda</label>
-                  <input id="moneda" v-model="formOcasion.moneda" required />
+                  <div class="input-wrapper">
+                    <input id="moneda" v-model="formOcasion.moneda" required />
+                    <span class="material-symbols-outlined icon-static">currency_exchange</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="duracion_min_horas">Duración mínima (horas)</label>
+                  <div class="input-wrapper">
+                    <input id="duracion_min_horas" type="number" min="1" step="1"
+                      v-model.number="formOcasion.duracion_min_horas" required />
+                    <span class="material-symbols-outlined icon-static">schedule</span>
+                  </div>
                 </div>
               </div>
               <div class="modal__actions">
@@ -124,28 +144,43 @@
               <div class="grid">
                 <div class="field">
                   <label for="nombre_mesa">Nombre</label>
-                  <input id="nombre_mesa" v-model="formMesa.nombre_mesa" required />
+                  <div class="input-wrapper">
+                    <input id="nombre_mesa" v-model="formMesa.nombre_mesa" required />
+                    <span class="material-symbols-outlined icon-static">table_restaurant</span>
+                  </div>
                 </div>
                 <div class="field">
                   <label for="id_ambiente">Ambiente</label>
-                  <select id="id_ambiente" v-model="formMesa.id_ambiente" required>
-                    <option value="" disabled>Selecciona un ambiente</option>
-                    <option v-for="ambiente in ambientes" :key="ambiente.id_ambiente" :value="ambiente.id_ambiente">
-                      {{ ambiente.nombre_ambiente }}
-                    </option>
-                  </select>
+                  <div class="input-wrapper">
+                    <select id="id_ambiente" v-model="formMesa.id_ambiente" required>
+                      <option value="" disabled>Selecciona un ambiente</option>
+                      <option v-for="ambiente in ambientes" :key="ambiente.id_ambiente" :value="ambiente.id_ambiente">
+                        {{ ambiente.nombre_ambiente }}
+                      </option>
+                    </select>
+                    <span class="material-symbols-outlined icon-static">room_preferences</span>
+                  </div>
                 </div>
                 <div class="field">
                   <label for="capacidad">Capacidad</label>
-                  <input id="capacidad" type="number" min="1" v-model="formMesa.capacidad" required />
+                  <div class="input-wrapper">
+                    <input id="capacidad" type="number" min="1" v-model.number="formMesa.capacidad" required />
+                    <span class="material-symbols-outlined icon-static">group</span>
+                  </div>
                 </div>
                 <div class="field field--full">
-                  <label for="ubicacion">Ubicación (Descripcion Minima)</label>
-                  <textarea id="ubicacion" v-model="formMesa.ubicacion" required></textarea>
+                  <label for="ubicacion">Ubicación (Descripción Mínima)</label>
+                  <div class="input-wrapper">
+                    <textarea id="ubicacion" v-model="formMesa.ubicacion" required></textarea>
+                    <span class="material-symbols-outlined icon-static">location_on</span>
+                  </div>
                 </div>
                 <div class="field field--full">
                   <label for="foto_url">URL de la foto</label>
-                  <input id="foto_url" v-model="formMesa.foto_url" type="url" />
+                  <div class="input-wrapper">
+                    <input id="foto_url" v-model="formMesa.foto_url" type="url" />
+                    <span class="material-symbols-outlined icon-static">image</span>
+                  </div>
                 </div>
               </div>
               <div class="modal__actions">
@@ -173,8 +208,23 @@ const ambientes = ref([]);
 const showOccasionModal = ref(false);
 const showMesaModal = ref(false);
 const mesaModalTitle = ref("Nueva Mesa");
-const formOcasion = ref({ nombre_ocasion: "", precio_ocasion: "", moneda: "COP" });
-const formMesa = ref({ id_mesa: null, nombre_mesa: "", id_ambiente: "", capacidad: "", ubicacion: "", foto_url: "" });
+
+const formOcasion = ref({
+  nombre_ocasion: "",
+  precio_ocasion: "",
+  moneda: "COP",
+  duracion_min_horas: "",
+});
+
+const formMesa = ref({
+  id_mesa: null,
+  nombre_mesa: "",
+  id_ambiente: "",
+  capacidad: "",
+  ubicacion: "",
+  foto_url: "",
+});
+
 const defaultImage = 'https://via.placeholder.com/160';
 
 /* ===== CARGAR OCASIONES ===== */
@@ -218,18 +268,29 @@ async function cargarMesasYAmbientes() {
 
 /* ===== MODAL OCASIÓN ===== */
 function openCreateOccasionModal() {
-  formOcasion.value = { nombre_ocasion: "", precio_ocasion: "", moneda: "COP" };
+  console.log("Abriendo modal de creación de ocasión");
+  formOcasion.value = { nombre_ocasion: "", precio_ocasion: "", moneda: "COP", duracion_min_horas: "" };
   showOccasionModal.value = true;
   document.body.style.overflow = "hidden";
 }
 
 function closeOccasionModal() {
+  console.log("Cerrando modal de ocasión");
   showOccasionModal.value = false;
   document.body.style.overflow = "";
 }
 
 /* ===== MODAL MESA ===== */
 function openCreateMesaModal() {
+  console.log("Abriendo modal de creación de mesa");
+  if (ambientes.value.length === 0) {
+    Swal.fire({
+      icon: "warning",
+      title: "No hay ambientes disponibles",
+      text: "Por favor, registra un ambiente antes de crear una mesa.",
+    });
+    return;
+  }
   formMesa.value = { id_mesa: null, nombre_mesa: "", id_ambiente: "", capacidad: "", ubicacion: "", foto_url: "" };
   mesaModalTitle.value = "Nueva Mesa";
   showMesaModal.value = true;
@@ -237,6 +298,15 @@ function openCreateMesaModal() {
 }
 
 function openEditMesaModal(mesa) {
+  console.log("Abriendo modal de edición de mesa:", mesa);
+  if (ambientes.value.length === 0) {
+    Swal.fire({
+      icon: "warning",
+      title: "No hay ambientes disponibles",
+      text: "Por favor, registra un ambiente antes de editar una mesa.",
+    });
+    return;
+  }
   formMesa.value = {
     id_mesa: mesa.id_mesa,
     nombre_mesa: mesa.nombre_mesa,
@@ -251,6 +321,7 @@ function openEditMesaModal(mesa) {
 }
 
 function closeMesaModal() {
+  console.log("Cerrando modal de mesa");
   showMesaModal.value = false;
   document.body.style.overflow = "";
 }
@@ -259,6 +330,14 @@ function closeMesaModal() {
 async function guardarOcasion() {
   try {
     console.log("Datos enviados para crear ocasión:", formOcasion.value);
+    if (!formOcasion.value.duracion_min_horas || formOcasion.value.duracion_min_horas < 1) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "La duración mínima debe ser un número positivo.",
+      });
+      return;
+    }
     const nueva = await crearOcasion(formOcasion.value);
     console.log("Respuesta de crearOcasion:", nueva);
     ocasiones.value.push({ ...formOcasion.value, id_ocasion: nueva.id || Date.now() });
@@ -278,20 +357,18 @@ async function guardarOcasion() {
       title: "Error al crear ocasión",
       text: err.response?.data?.message || "Error desconocido",
     });
-    closeOccasionModal();
   }
 }
 
 /* ===== GUARDAR MESA (CREAR O ACTUALIZAR) ===== */
 async function guardarMesa() {
   try {
+    console.log("Datos enviados para guardar mesa:", formMesa.value);
     let nuevaOActualizada;
     const data = { ...formMesa.value };
-    delete data.id_mesa; // No enviar id en el body
+    delete data.id_mesa;
 
     if (formMesa.value.id_mesa) {
-      // Modo editar
-      console.log("Datos enviados para actualizar mesa:", formMesa.value);
       nuevaOActualizada = await actualizarMesa(formMesa.value.id_mesa, data);
       console.log("Respuesta de actualizarMesa:", nuevaOActualizada);
       Swal.fire({
@@ -302,8 +379,6 @@ async function guardarMesa() {
         showConfirmButton: false,
       });
     } else {
-      // Modo crear
-      console.log("Datos enviados para crear mesa:", formMesa.value);
       nuevaOActualizada = await crearMesa(data);
       console.log("Respuesta de crearMesa:", nuevaOActualizada);
       Swal.fire({
@@ -316,7 +391,7 @@ async function guardarMesa() {
     }
 
     closeMesaModal();
-    await cargarMesasYAmbientes(); // Recargar para reflejar cambios
+    await cargarMesasYAmbientes();
   } catch (err) {
     console.error("Error al guardar mesa:", err);
     console.error("Detalles del error:", err.response?.data || err.message);
@@ -330,6 +405,7 @@ async function guardarMesa() {
 
 /* ===== ELIMINAR MESA ===== */
 async function confirmarEliminarMesa(id) {
+  console.log("Confirmando eliminación de mesa:", id);
   const result = await Swal.fire({
     title: "¿Estás seguro?",
     text: "¡No podrás revertir esta acción!",
@@ -351,7 +427,7 @@ async function confirmarEliminarMesa(id) {
         timer: 1500,
         showConfirmButton: false,
       });
-      await cargarMesasYAmbientes(); // Recargar
+      await cargarMesasYAmbientes();
     } catch (err) {
       console.error("Error al eliminar mesa:", err);
       Swal.fire({
@@ -373,6 +449,7 @@ function formatCurrency(value, currency) {
 }
 
 onMounted(() => {
+  console.log("Componente montado, cargando datos...");
   cargarOcasiones();
   cargarMesasYAmbientes();
 });
@@ -395,13 +472,14 @@ onMounted(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   padding: 1rem;
 }
+
 .actions__buttons {
   display: flex;
   gap: 0.6rem;
   margin-top: 0.5rem;
 }
 
-/* ===== Cards (adaptado del otro código) ===== */
+/* ===== Cards ===== */
 .results {
   max-width: 1200px;
   margin: 0 auto;
@@ -420,7 +498,7 @@ onMounted(() => {
   grid-column: span 12;
 }
 
-.card > article {
+.card>article {
   background: var(--color-blanco, #fff);
   border-radius: var(--border-radius-3, 0.6rem);
   box-shadow: var(--box-shadow, 0 2px 6px rgba(0, 0, 0, 0.08));
@@ -435,7 +513,7 @@ onMounted(() => {
   grid-column: span 12;
 }
 
-.card--mini > article {
+.card--mini>article {
   grid-template-columns: 1fr;
   height: auto;
   padding: 1rem;
@@ -523,7 +601,7 @@ onMounted(() => {
   padding: 1rem;
 }
 
-/* ===== Modal (estilos existentes) ===== */
+/* ===== Modal ===== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -535,6 +613,7 @@ onMounted(() => {
   padding: 1rem;
   z-index: 1000;
 }
+
 .modal {
   background: #fff;
   width: min(820px, 100%);
@@ -543,13 +622,16 @@ onMounted(() => {
   border-radius: 0.6rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
+
 .modal {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+
 .modal::-webkit-scrollbar {
   display: none;
 }
+
 .modal__header {
   display: flex;
   justify-content: space-between;
@@ -557,10 +639,12 @@ onMounted(() => {
   padding: 0.9rem 1rem;
   border-bottom: 1px solid #d1e3ff;
 }
+
 .modal__header h3 {
   margin: 0;
   color: var(--color-oscuro);
 }
+
 .modal__close {
   background: transparent;
   border: 1px solid #d1e3ff;
@@ -568,28 +652,34 @@ onMounted(() => {
   padding: 0.25rem 0.45rem;
   cursor: pointer;
 }
+
 .modal__body {
   padding: 1rem;
   display: grid;
   gap: 1rem;
 }
+
 .form .grid {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(12, 1fr);
 }
+
 .form .field {
   grid-column: span 12;
   display: grid;
   gap: 0.25rem;
 }
+
 .form .field--full {
   grid-column: span 12;
 }
+
 .form .field label {
   color: var(--color-oscuro);
   font-weight: 700;
 }
+
 .form input,
 .form select,
 .form textarea {
@@ -599,10 +689,53 @@ onMounted(() => {
   font: inherit;
   background: var(--color-blanco);
 }
+
 .form textarea {
   resize: vertical;
   min-height: 100px;
 }
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-wrapper input,
+.input-wrapper select,
+.input-wrapper textarea {
+  width: 100%;
+  padding: 0.55rem 2.5rem 0.55rem 0.7rem;
+  border: 1px solid #d1e3ff;
+  border-radius: 0.4rem;
+  font: inherit;
+  background: var(--color-blanco);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input-wrapper input:focus,
+.input-wrapper select:focus,
+.input-wrapper textarea:focus {
+  border-color: var(--color-azul-1);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 105, 255, 0.2);
+}
+
+.icon-static {
+  position: absolute;
+  top: 50%;
+  right: 0.7rem;
+  transform: translateY(-50%);
+  color: var(--color-azul-1);
+  font-size: 1.3rem;
+  pointer-events: none;
+}
+
+.input-wrapper textarea {
+  padding: 0.55rem 2.5rem 0.55rem 0.7rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
 .modal__actions {
   display: flex;
   justify-content: flex-end;
@@ -621,26 +754,32 @@ onMounted(() => {
   letter-spacing: 0.2px;
   transition: transform 120ms ease, filter 120ms ease;
 }
+
 .btn:hover {
   transform: translateY(-1px);
   filter: brightness(0.98);
 }
+
 .btn:active {
   transform: translateY(0);
 }
+
 .btn--primary {
   background: linear-gradient(135deg, var(--color-azul-1), var(--color-primary-variant));
   color: var(--color-blanco);
 }
+
 .btn--ghost {
   background: var(--color-blanco);
   border-color: var(--color-info-luz);
   color: var(--color-oscuro);
 }
+
 .btn--small {
   --_pad: 0.4rem 0.8rem;
   font-size: 0.9rem;
 }
+
 :focus-visible {
   outline: 3px solid #ffd700;
   outline-offset: 2px;
@@ -651,12 +790,15 @@ onMounted(() => {
   .form .field {
     grid-column: span 6;
   }
+
   .form .field--full {
     grid-column: span 12;
   }
+
   .card {
     grid-column: span 6;
   }
+
   .card--mini {
     grid-column: span 6;
   }
@@ -666,6 +808,7 @@ onMounted(() => {
   .card {
     grid-column: span 4;
   }
+
   .card--mini {
     grid-column: span 4;
   }

@@ -92,7 +92,10 @@
                 <span class="chip" v-if="ambiente.caracteristica">• {{ ambiente.caracteristica }}</span>
               </div>
               <div class="place__actions">
-                <button class="btn btn--primary" @click="$emit('reservar', ambiente.id_ambiente)">Reservar</button>
+                <RouterLink class="btn btn--primary"
+                  :to="{ path: '/reservas', query: { ambiente: ambiente.id_ambiente } }">
+                  Reservar
+                </RouterLink>
               </div>
             </div>
           </article>

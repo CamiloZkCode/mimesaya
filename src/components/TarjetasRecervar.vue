@@ -100,7 +100,7 @@
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reserva-title" ref="modalRef"
           @keydown.esc.prevent="closeModal">
           <header class="modal__header">
-            <h3 id="reserva-title">Confirmar reserva/{{ modal.table?.nombre_mesa }}</h3>
+            <h3 id="reserva-title">Confirmar reserva / {{ modal.table?.nombre_mesa }}</h3>
             <button class="modal__close" @click="closeModal" aria-label="Cerrar">✕</button>
           </header>
 
@@ -123,7 +123,7 @@
               <div class="grid">
                 <div class="field">
                   <label for="r-hora">Hora</label>
-                  <select id="r-hora" v-model="form.time" required>
+                  <select id="r-hora" v-model="form.time" required @change="updateTimeSlots">
                     <option value="">Seleccionar hora</option>
                     <option v-for="h in timeSlots" :key="h" :value="h">{{ h }}</option>
                   </select>
@@ -132,15 +132,15 @@
                 <div class="field">
                   <label for="r-ocasion">Ocasión</label>
                   <select id="r-ocasion" v-model="form.occasionId" @change="actualizarPrecio">
-                    <option :value="null">Ninguna (3.000 COP)</option>
+                    <option :value="null">Seleccionar ocasion</option>
                     <option v-for="o in occasionOptions" :key="o.id_ocasion" :value="o.id_ocasion">
-                      {{ o.nombre_ocasion }} - {{ o.precio_ocasion }} COP
+                      {{ o.nombre_ocasion }} ({{ formatPrice(Number(o.precio_ocasion) + 1500) }})
                     </option>
                   </select>
                 </div>
 
                 <div class="field" style="grid-column: 1 / -1;">
-                  <p><strong>Total a pagar:</strong> {{ precioSeleccionado }} COP</p>
+                  <p><strong>Total a pagar:</strong> {{ formatPrice(precioSeleccionado) }}</p>
                 </div>
 
                 <div class="field" style="grid-column: 1 / -1;">
@@ -175,19 +175,28 @@ import { useRoute, useRouter } from 'vue-router';
 import { obtenerAmbientes } from '@/services/ambientes';
 import { obtenerRestaurantes } from '@/services/restaurante';
 import { obtenerMesasDisponibles } from '@/services/mesas';
-import { obtenerHorariosDisponibles, crearReserva, confirmarReserva } from '@/services/reservas';
+import { obtenerHorariosDisponibles, crearReserva } from '@/services/reservas';
 import { obtenerOcasionesPorRestaurante } from '@/services/ocasion';
 import { obtenerUsuario } from '@/services/usuarios';
 import Swal from 'sweetalert2';
 
-/* ---------- Estado del usuario ---------- */
+const formatter = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+function formatPrice(value) {
+  return formatter.format(value);
+}
+
 const userData = reactive({
   nombre: '',
   telefono: '',
   correo: '',
 });
 
-/* ---------- Catálogos ---------- */
 const places = ref([]);
 const restaurants = ref([]);
 const tables = ref([]);
@@ -196,7 +205,6 @@ const peopleOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 const timeSlots = ref([]);
 const occasionOptions = ref([]);
 
-/* ---------- Paginación ---------- */
 const perPage = 30;
 const currentPage = ref(1);
 const totalPages = computed(() => Math.ceil(filteredTables.value.length / perPage));
@@ -206,15 +214,9 @@ const currentPageTables = computed(() => {
   return filteredTables.value.slice(start, end);
 });
 
-function prevPage() {
-  if (currentPage.value > 1) currentPage.value--;
-}
+function prevPage() { if (currentPage.value > 1) currentPage.value--; }
+function nextPage() { if (currentPage.value < totalPages.value) currentPage.value++; }
 
-function nextPage() {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-}
-
-/* ---------- Estado filtros ---------- */
 const todayISO = new Date().toISOString().slice(0, 10);
 const filters = reactive({
   restaurant: '',
@@ -224,71 +226,55 @@ const filters = reactive({
 });
 const applied = reactive({ ...filters });
 
-/* ---------- Vue Router ---------- */
 const route = useRoute();
 const router = useRouter();
 
-/* ---------- Precio dinámico ---------- */
-const precioSeleccionado = ref(3000);
+const precioSeleccionado = ref(1500);
 
 function actualizarPrecio() {
   const selectedOption = occasionOptions.value.find(o => o.id_ocasion === form.occasionId);
-  precioSeleccionado.value = selectedOption ? selectedOption.precio_ocasion : 3000;
+  precioSeleccionado.value = selectedOption ? Number(selectedOption.precio_ocasion) + 1500 : 1500;
 }
 
-/* ---------- Cargar datos iniciales ---------- */
+async function updateTimeSlots() {
+  if (modal.table && form.time) {
+    try {
+      timeSlots.value = await obtenerHorariosDisponibles(modal.table.id_mesa, applied.date, form.occasionId);
+    } catch (error) {
+      console.error('Error al actualizar horarios:', error);
+      timeSlots.value = [];
+      formError.value = error.message || 'No hay horarios disponibles.';
+    }
+  }
+}
+
 onMounted(async () => {
   try {
-    // Cargar datos del usuario
     const token = localStorage.getItem('token');
     if (token) {
-      try {
-        const usuario = await obtenerUsuario();
-        userData.nombre = usuario.nombre;
-        userData.telefono = usuario.telefono;
-        userData.correo = usuario.correo;
-      } catch (error) {
-        console.error('Error al cargar datos del usuario:', error);
-        Swal.fire({
-          title: 'Error',
-          text: 'No se pudieron cargar los datos del usuario. Por favor, inicia sesión nuevamente.',
-          icon: 'error',
-          confirmButtonText: 'OK',
-        }).then(() => {
-          router.push('/login');
-        });
-      }
+      const usuario = await obtenerUsuario();
+      userData.nombre = usuario.nombre;
+      userData.telefono = usuario.telefono;
+      userData.correo = usuario.correo;
     }
 
-    // Cargar restaurantes
     const restaurantesData = await obtenerRestaurantes();
-    restaurants.value = restaurantesData.map(r => ({
-      value: r.id_restaurante,
-      label: r.nombre_restaurante,
-    }));
+    restaurants.value = restaurantesData.map(r => ({ value: r.id_restaurante, label: r.nombre_restaurante }));
 
-    // Cargar ambientes
     const ambientesData = await obtenerAmbientes();
-    places.value = ambientesData.map(a => ({
-      value: a.id_ambiente,
-      label: a.nombre_ambiente,
-    }));
+    places.value = ambientesData.map(a => ({ value: a.id_ambiente, label: a.nombre_ambiente }));
 
-    // Aplicar filtro inicial desde la URL
-    if (route?.query?.tipo && typeof route.query.tipo === 'string' && restaurants.value.length) {
+    if (route?.query?.tipo) {
       const matchingRestaurant = restaurants.value.find(r => r.label === route.query.tipo);
-      if (matchingRestaurant) {
-        filters.restaurant = matchingRestaurant.value;
-      }
+      if (matchingRestaurant) filters.restaurant = matchingRestaurant.value;
     }
 
-    // Aplicar filtros iniciales
+    if (route?.query?.ambiente) {
+      const matchingAmbiente = places.value.find(p => p.value == route.query.ambiente);
+      if (matchingAmbiente) filters.ambiente = matchingAmbiente.value;
+    }
+
     await applyFilters();
-
-    // Verificar si estamos en la página de éxito
-    if (route.path === '/reserva/success') {
-      await handleSuccess();
-    }
   } catch (error) {
     console.error('Error al cargar datos:', error);
     Swal.fire('Error', 'No se pudieron cargar los datos. Intenta de nuevo.', 'error');
@@ -325,7 +311,6 @@ function clearFilters() {
   applyFilters();
 }
 
-/* ---------- Computados ---------- */
 const filteredTables = computed(() => tables.value);
 
 const filtersSummary = computed(() => {
@@ -345,7 +330,6 @@ const filtersSummary = computed(() => {
 
 const displayDate = computed(() => applied.date.split('-').reverse().join('/'));
 
-/* ---------- Modal ---------- */
 const modal = reactive({ open: false, table: null });
 const modalRef = ref(null);
 const formError = ref('');
@@ -365,12 +349,8 @@ async function openModal(t) {
     form.notes = `Reserva para ${applied.people || t.capacidad} personas en ${t.nombre_ambiente || '—'}.`;
   }
   try {
-    // Cargar horarios disponibles
-    timeSlots.value = await obtenerHorariosDisponibles(t.id_mesa, applied.date);
-
-    // Cargar ocasiones para el restaurante
-    const ocasiones = await obtenerOcasionesPorRestaurante(t.id_restaurante);
-    occasionOptions.value = ocasiones;
+    timeSlots.value = await obtenerHorariosDisponibles(t.id_mesa, applied.date, form.occasionId);
+    occasionOptions.value = await obtenerOcasionesPorRestaurante(t.id_restaurante);
     actualizarPrecio();
   } catch (error) {
     console.error('Error al cargar datos:', error);
@@ -391,6 +371,7 @@ function closeModal() {
   form.notes = '';
   form.acceptsPolicy = false;
   formError.value = '';
+  precioSeleccionado.value = 1500;
   document.body.style.overflow = '';
 }
 
@@ -405,9 +386,7 @@ async function submitReservation() {
       confirmButtonText: 'Iniciar sesión',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
-      if (result.isConfirmed) {
-        router.push('/login');
-      }
+      if (result.isConfirmed) router.push('/login');
     });
     return;
   }
@@ -426,32 +405,17 @@ async function submitReservation() {
   };
 
   try {
-    const { checkoutUrl } = await crearReserva(payload);
-    window.location.href = checkoutUrl;
+    const reserva = await crearReserva(payload);
+
+    if (reserva.checkoutUrl) {
+      window.location.href = reserva.checkoutUrl;
+    } else {
+      throw new Error('No se pudo generar la sesión de pago.');
+    }
   } catch (error) {
     console.error('Error al crear reserva:', error);
     formError.value = error.message || 'Error al crear la reserva. Intenta de nuevo.';
     Swal.fire('Error', formError.value, 'error');
-  }
-}
-
-async function handleSuccess() {
-  const sessionId = route.query.session_id;
-  if (sessionId) {
-    try {
-      await confirmarReserva(sessionId);
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Tu reserva fue confirmada exitosamente.',
-        icon: 'success',
-        confirmButtonText: 'OK',
-      }).then(() => {
-        router.push('/');
-      });
-    } catch (error) {
-      console.error('Error al confirmar reserva:', error);
-      Swal.fire('Error', error.message || 'No se pudo confirmar la reserva.', 'error');
-    }
   }
 }
 

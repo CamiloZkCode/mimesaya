@@ -29,3 +29,13 @@ export async function actualizarRestaurante(id, data) {
     throw err.response?.data || err;
   }
 }
+
+
+export async function obtenerTiposRestaurantes() {
+  try {
+    const res = await API.get("/restaurantes/ver-tipos-restaurantes");
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+}

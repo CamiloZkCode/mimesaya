@@ -27,3 +27,12 @@ export async function confirmarReserva(sessionId) {
     throw err.response?.data || { message: "Error al confirmar la reserva" };
   }
 }
+
+export async function obtenerFactura(id) {
+  try {
+    const res = await API.get(`/reservas/factura/${id}`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { message: "Error al obtener la factura" };
+  }
+}
