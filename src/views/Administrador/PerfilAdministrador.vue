@@ -2,7 +2,16 @@
   <main class="perfil-admin">
     <!-- ===== IMAGEN RESTAURANTE (IZQUIERDA) ===== -->
     <aside class="restaurante-logo">
-      <img :src="restaurante.logo_restaurante" :alt="restaurante.nombre_restaurante" />
+      <img
+        v-if="restaurante.logo_restaurante"
+        :src="restaurante.logo_restaurante"
+        :alt="restaurante.nombre_restaurante"
+      />
+      <img
+        v-else
+        src="../../assets/Logo/LogoSinLetra.jpg"
+        alt="Logo restaurante"
+      />
     </aside>
 
     <!-- ===== INFO (ADMIN Y RESTAURANTE A LA DERECHA, EN ROWS) ===== -->
@@ -21,35 +30,52 @@
         <p><strong>NIT:</strong> {{ restaurante.nit_restaurante }}</p>
         <p><strong>Dirección:</strong> {{ restaurante.direccion_restaurante }}</p>
         <p><strong>Teléfono:</strong> {{ restaurante.telefono_restaurante }}</p>
+
+        <!-- Enlace a la cuenta de Stripe -->
+        <div v-if="restaurante.enlaceStripe" class="stripe-section">
+          <p><strong>Pagos en línea:</strong></p>
+          <a
+            :href="restaurante.enlaceStripe"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="stripe-link"
+          >
+            Configurar cuenta Stripe
+          </a>
+        </div>
+        <div v-else class="stripe-section">
+          <p><strong>Pagos en línea:</strong> No conectado</p>
+        </div>
       </div>
     </section>
   </main>
 </template>
 
 <script>
-import { ref } from 'vue'
-import restauranteImg from '../../assets/Logo/LogoSinLetra.jpg'
+import { ref, onMounted } from "vue";
+import { obtenerPerfil } from "@/services/perfil"; // servicio conectado al backend
 
 export default {
-  name: 'PerfilAdministrador',
+  name: "PerfilAdministrador",
   setup() {
-    const admin = ref({
-      nombre: 'Juan Pérez',
-      telefono: '3001234567',
-      correo: 'juanperez@correo.com'
-    })
+    const admin = ref({});
+    const restaurante = ref({});
 
-    const restaurante = ref({
-      nit_restaurante: '900123456-7',
-      nombre_restaurante: 'Restaurante MiMesaYa',
-      direccion_restaurante: 'Cra 15 #45-67 Bogotá',
-      telefono_restaurante: '6011234567',
-      logo_restaurante: restauranteImg
-    })
+    onMounted(async () => {
+      try {
+        // Puedes obtener el id_admin desde el login o localStorage
+        const id_admin = localStorage.getItem("id_usuario") || 1;
+        const data = await obtenerPerfil(id_admin);
+        admin.value = data.admin;
+        restaurante.value = data.restaurante;
+      } catch (error) {
+        console.error("Error cargando perfil:", error);
+      }
+    });
 
-    return { admin, restaurante }
-  }
-}
+    return { admin, restaurante };
+  },
+};
 </script>
 
 <style scoped>
@@ -57,28 +83,29 @@ export default {
   display: flex;
   gap: 2rem;
   padding: 2rem;
-  max-width: 1400px; /* más ancho */
+  max-width: 1400px;
   margin: 0 auto;
   align-items: flex-start;
 }
 
-/* Imagen del restaurante */
+/* ===== Imagen del restaurante ===== */
 .restaurante-logo {
-  flex-shrink: 0; /* mantiene tamaño fijo */
+  flex-shrink: 0;
 }
 .restaurante-logo img {
-  width: 200px;   
+  width: 200px;
   height: 200px;
   border-radius: 20px;
   object-fit: cover;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
-  margin-left: -1rem; 
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  margin-left: -1rem;
 }
 
+/* ===== Info del perfil ===== */
 .perfil-info {
   flex: 1;
   display: flex;
-  flex-direction: column; /* en filas */
+  flex-direction: column;
   gap: 1rem;
 }
 
@@ -86,9 +113,9 @@ export default {
 .restaurante-info {
   background: var(--color-blanco, #fff);
   border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
-  padding: 2rem 3rem; 
-  width: 100%; 
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  padding: 2rem 3rem;
+  width: 100%;
 }
 
 .admin-info h2,
@@ -101,10 +128,31 @@ export default {
 .admin-info p,
 .restaurante-info p {
   font-size: 1.2rem;
-  margin: .5rem 0;
+  margin: 0.5rem 0;
   color: #333;
 }
 
+/* ===== Enlace Stripe ===== */
+.stripe-section {
+  margin-top: 1rem;
+}
+
+.stripe-link {
+  display: inline-block;
+  background-color: #635bff;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.stripe-link:hover {
+  background-color: #4b44cc;
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .perfil-admin {
     flex-direction: column;
@@ -112,35 +160,40 @@ export default {
   }
 
   .restaurante-logo {
-    margin: 0 auto; 
+    margin: 0 auto;
   }
 
   .restaurante-logo img {
-    margin-left: 0; 
-    width: 150px; 
+    margin-left: 0;
+    width: 150px;
     height: 150px;
   }
 
   .perfil-info {
-    width: 100%; 
-    align-items: center; 
+    width: 100%;
+    align-items: center;
   }
 
   .admin-info,
   .restaurante-info {
-    width: 100%; 
+    width: 100%;
     max-width: 500px;
   }
 
   .admin-info h2,
   .restaurante-info h2 {
     text-align: center;
-    font-size: 1.4rem; 
+    font-size: 1.4rem;
   }
 
   .admin-info p,
   .restaurante-info p {
-    font-size: 1rem; 
+    font-size: 1rem;
+  }
+
+  .stripe-link {
+    display: block;
+    text-align: center;
   }
 }
 </style>

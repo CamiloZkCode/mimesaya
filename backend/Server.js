@@ -13,7 +13,7 @@ const RestauranteRoutes = require('./routes/restaurante.routes');
 const MesaRoutes = require('./routes/mesa.routes');
 const reservarRoutes = require('./routes/reservas.routes');
 const ocasionRoutes = require('./routes/ocasion.routes');
-
+const perfilUsuarios = require('./routes/perfilUsuarios.routes');
 
 
 const app = express();
@@ -35,7 +35,7 @@ app.use('/api/restaurantes', RestauranteRoutes);
 app.use('/api/mesas', MesaRoutes);
 app.use('/api/reservas',reservarRoutes );
 app.use('/api/ocasion',ocasionRoutes );
-
+app.use('/api/perfil',perfilUsuarios);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
