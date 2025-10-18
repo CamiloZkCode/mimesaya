@@ -499,7 +499,7 @@ onMounted(() => {
 }
 
 .card>article {
-  background: var(--color-blanco, #fff);
+  background: var(--color-blanco);
   border-radius: var(--border-radius-3, 0.6rem);
   box-shadow: var(--box-shadow, 0 2px 6px rgba(0, 0, 0, 0.08));
   overflow: hidden;
@@ -615,7 +615,7 @@ onMounted(() => {
 }
 
 .modal {
-  background: #fff;
+  background: var(--color-blanco);
   width: min(820px, 100%);
   max-height: 90vh;
   overflow-y: auto;

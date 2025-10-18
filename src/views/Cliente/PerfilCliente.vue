@@ -14,7 +14,6 @@
     <section class="reservas">
       <h2>Mis Reservas</h2>
 
-      <!-- CONTENEDOR SCROLLABLE -->
       <div class="tabla-scroll">
         <table>
           <thead>
@@ -31,42 +30,29 @@
           </thead>
 
           <tbody>
-            <tr>
-              <td>#0012</td>
-              <td>La Parrilla Gourmet</td>
-              <td>Mesa 4</td>
-              <td>Cumpleaños</td>
-              <td>2025-10-20 18:00</td>
-              <td>2025-10-20 20:00</td>
-              <td><span class="estado pendiente">Pendiente</span></td>
+            <tr v-for="reserva in reservas" :key="reserva.id">
+              <td>#{{ reserva.id }}</td>
+              <td>{{ reserva.restaurante }}</td>
+              <td>{{ reserva.mesa }}</td>
+              <td>{{ reserva.ocasion }}</td>
+              <td>{{ formatearFecha(reserva.fecha_inicio) }}</td>
+              <td>{{ formatearFecha(reserva.fecha_fin) }}</td>
               <td>
-                <button class="btn-cancelar">Cancelar</button>
+                <span
+                  class="estado"
+                  :class="{
+                    pendiente: reserva.estado === 'Pendiente',
+                    confirmada: reserva.estado === 'Confirmada',
+                    cancelada: reserva.estado === 'Cancelada'
+                  }"
+                >
+                  {{ reserva.estado }}
+                </span>
               </td>
-            </tr>
-
-            <tr>
-              <td>#0013</td>
-              <td>El Sabor del Mar</td>
-              <td>Mesa 2</td>
-              <td>Cena Romántica</td>
-              <td>2025-09-28 19:00</td>
-              <td>2025-09-28 21:00</td>
-              <td><span class="estado confirmada">Confirmada</span></td>
               <td>
-                <button class="btn-cancelar" disabled>Cancelar</button>
-              </td>
-            </tr>
-
-            <tr>
-              <td>#0014</td>
-              <td>Café Central</td>
-              <td>Mesa 1</td>
-              <td>Reunión</td>
-              <td>2025-09-10 10:00</td>
-              <td>2025-09-10 11:30</td>
-              <td><span class="estado cancelada">Cancelada</span></td>
-              <td>
-                <button class="btn-cancelar" disabled>Cancelar</button>
+                <button class="btn-cancelar" :disabled="reserva.estado === 'Cancelada'">
+                  Cancelar
+                </button>
               </td>
             </tr>
           </tbody>
@@ -77,7 +63,46 @@
 </template>
 
 <script setup>
-// Solo diseño visual con datos ficticios
+import { ref } from "vue";
+
+const reservas = ref([
+  {
+    id: "0012",
+    restaurante: "La Parrilla Gourmet",
+    mesa: "Mesa 4",
+    ocasion: "Cumpleaños",
+    fecha_inicio: "2025-10-20 18:00",
+    fecha_fin: "2025-10-20 20:00",
+    estado: "Pendiente",
+  },
+  {
+    id: "0013",
+    restaurante: "El Sabor del Mar",
+    mesa: "Mesa 2",
+    ocasion: "Cena Romántica",
+    fecha_inicio: "2025-09-28 19:00",
+    fecha_fin: "2025-09-28 21:00",
+    estado: "Confirmada",
+  },
+  {
+    id: "0014",
+    restaurante: "Café Central",
+    mesa: "Mesa 1",
+    ocasion: "Reunión",
+    fecha_inicio: "2025-09-10 10:00",
+    fecha_fin: "2025-09-10 11:30",
+    estado: "Cancelada",
+  },
+]);
+
+function formatearFecha(fechaString) {
+  const fecha = new Date(fechaString);
+  const opcionesFecha = { day: "2-digit", month: "2-digit", year: "numeric" };
+  const opcionesHora = { hour: "2-digit", minute: "2-digit", hour12: false };
+  const fechaFormateada = fecha.toLocaleDateString("es-ES", opcionesFecha);
+  const horaFormateada = fecha.toLocaleTimeString("es-ES", opcionesHora);
+  return `${fechaFormateada} - ${horaFormateada}`;
+}
 </script>
 
 <style scoped>
@@ -85,7 +110,7 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  padding: 2rem 4rem; /* más ancho */
+  padding: 2rem 4rem;
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
@@ -94,34 +119,28 @@
 
 /* ===== SECCIÓN CLIENTE ===== */
 .cliente-info {
-  background: #fff;
-  padding: 2rem 4rem; /* más espacio horizontal */
+  background: var(--color-blanco);
+  padding: 2rem 4rem;
   border-radius: 16px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   width: 100%;
 }
 
-.cliente-detalles {
-  max-width: 100%;
-}
-
 .cliente-detalles h2 {
   font-size: 2rem;
   margin-bottom: 1rem;
-  color: #222;
+  color: var(--color-oscuro);
 }
-
 .cliente-detalles p {
-  font-size: 1.3rem;
-  color: #333;
-  margin: 0.5rem 0;
+  font-size: 1.1rem;
+  margin-bottom: 0.6rem;
 }
 
-/* ===== TABLA DE RESERVAS ===== */
+/* ===== TABLA ===== */
 .reservas {
-  background: #fff;
+  background: var(--color-blanco);
   border-radius: 16px;
-  padding: 2rem 4rem; /* más ancho */
+  padding: var(--padding-1);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
   width: 100%;
 }
@@ -129,10 +148,9 @@
 .reservas h2 {
   font-size: 1.8rem;
   margin-bottom: 1.2rem;
-  color: #222;
+  color: var(--color-oscuro);
 }
 
-/* Contenedor scroll */
 .tabla-scroll {
   width: 100%;
   overflow-x: auto;
@@ -145,52 +163,55 @@ table {
   min-width: 800px;
 }
 
+th {
+  background: var(--color-info-luz);
+  color: var(--color-oscuro);
+  font-size: 1.05rem;
+}
+
 th,
 td {
   padding: 1rem;
   text-align: center;
-  border-bottom: 1px solid #ddd;
-}
-
-th {
-  background-color: #f4f4f4;
-  color: #333;
-  font-size: 1.05rem;
+  border-bottom: 1px solid var(--color-info-luz);
 }
 
 .estado {
-  padding: 0.4rem 0.7rem;
+  display: inline-block;
+  width: 100px;
+  text-align: center;
+  padding: 0.4rem 0;
   border-radius: 6px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-blanco);
 }
 
 .estado.pendiente {
-  background-color: #f0ad4e;
+  background-color: var(--color-naranja-3);
 }
 
 .estado.confirmada {
-  background-color: #28a745;
+  background-color: var(--color-aprobado-1);
 }
 
 .estado.cancelada {
-  background-color: #dc3545;
+  background-color: var(--color-rojo-5);
 }
 
-/* Botón cancelar */
 .btn-cancelar {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--color-rojo-5);
+  color: var(--color-blanco);
   border: none;
-  padding: 0.5rem 0.9rem;
   border-radius: 6px;
   cursor: pointer;
   transition: 0.3s;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  font-weight: 600;
 }
 
 .btn-cancelar:hover:not(:disabled) {
-  background-color: #c82333;
+  background-color: var(--color-rojo-6);
 }
 
 .btn-cancelar:disabled {
@@ -230,7 +251,7 @@ th {
   }
 
   table {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     min-width: 700px;
   }
 

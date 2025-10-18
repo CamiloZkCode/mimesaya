@@ -137,7 +137,7 @@ function formatFecha(fecha) {
 }
 
 .factura-card {
-  background: #fff;
+  background: var(--color-blanco);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -184,7 +184,7 @@ function formatFecha(fecha) {
 .tabla-precios tfoot th {
   font-size: 1.1rem;
   font-weight: bold;
-  border-top: 2px solid #007bff;
+  border-top: 2px solid var(--color-azul-1);
 }
 
 .text-right {
@@ -201,7 +201,7 @@ function formatFecha(fecha) {
 .btn {
   display: inline-block;
   padding: 0.8rem 1.2rem;
-  background: #007bff;
+  background: var(--color-azul-1);
   color: #fff;
   border-radius: 8px;
   text-decoration: none;
@@ -209,7 +209,7 @@ function formatFecha(fecha) {
 }
 
 .btn:hover {
-  background: #0056b3;
+  background: var(--color-azul-1);
 }
 
 .estado {
@@ -219,6 +219,6 @@ function formatFecha(fecha) {
 }
 
 .estado.error {
-  color: #d9534f;
+  color: var(--color-rojo-5);
 }
 </style>

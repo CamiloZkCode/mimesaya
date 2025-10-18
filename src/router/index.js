@@ -21,7 +21,6 @@ import ReservaCancel from "@/views/Cliente/ReservaCancelada.vue";
 // Administrador
 import GestionarReservas from "@/views/Administrador/GestionarReservas.vue";
 import GestionarMesas from "@/views/Administrador/GestorMesas.vue";
-import GestionarClientes from "@/views/Administrador/GestorClientes.vue";
 import PerfilAdministrador from "@/views/Administrador/PerfilAdministrador.vue";
 
 const routes = [
@@ -71,7 +70,6 @@ const routes = [
       { path: "perfil", name: "PerfilAdministrador", component: PerfilAdministrador },
       { path: "reservas", name: "GestionarReservas", component: GestionarReservas },
       { path: "mesas", name: "GestionarMesas", component: GestionarMesas },
-      { path: "clientes", name: "GestionarClientes", component: GestionarClientes },
     ],
   },
 

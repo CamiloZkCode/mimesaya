@@ -9,10 +9,10 @@
 :root {
   --color-azul-1: #0188db;
   --color-amarillo-2: #f4b908;
-  --color-naranja-3: #f48608;
+  --color-naranja-3: #f0ad4e;
   --color-morado-4: #b5106b;
   --color-rojo-5: #b6212b;
-  --color-aprobado-1: #67c119;
+  --color-aprobado-1: #28a745;
   --color-blanco: #FFF;
   --color-info-gris: #7d8da1;
   --color-info-luz: #dce1eb;

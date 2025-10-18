@@ -8,7 +8,7 @@
       />
     </aside>
 
-    <!-- ===== INFO (ADMIN Y RESTAURANTE A LA DERECHA, EN ROWS) ===== -->
+    <!-- ===== INFO (ADMIN Y RESTAURANTE A LA DERECHA) ===== -->
     <section class="perfil-info">
       <!-- Info del administrador -->
       <div class="admin-info">
@@ -31,7 +31,7 @@
           <!-- Botón: Crear cuenta Stripe -->
           <button
             v-if="!restaurante.tieneCuentaStripe"
-            class="stripe-btn crear"
+            class="btn btn--primary"
             @click="crearCuentaStripe"
           >
             Crear cuenta Stripe
@@ -40,7 +40,7 @@
           <!-- Botón: Editar / Gestionar cuenta Stripe -->
           <button
             v-if="restaurante.tieneCuentaStripe"
-            class="stripe-btn editar"
+            class="btn btn--ghost"
             @click="abrirStripe(restaurante.enlaceStripe)"
           >
             Gestionar cuenta Stripe
@@ -83,9 +83,7 @@ const crearCuentaStripe = async () => {
 
   if (confirm.isConfirmed) {
     try {
-      // Aquí puedes llamar a un endpoint específico para crear la cuenta
-      // por ejemplo: POST /api/stripe/crear-cuenta
-      window.location.reload(); // provisional: recargar para que backend genere el enlace
+      window.location.reload();
     } catch (error) {
       Swal.fire({
         icon: "error",
@@ -122,6 +120,7 @@ onMounted(async () => {
   align-items: flex-start;
 }
 
+/* ===== LOGO ===== */
 .restaurante-logo {
   width: 200px;
   height: 200px;
@@ -129,16 +128,18 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, var(--color-azul-1), var(--color-primary-variant));
+  box-shadow: var(--box-shadow);
 }
 
 .restaurante-logo img {
-  width: 200px;
-  height: 200px;
+  width: 180px;
+  height: 180px;
   border-radius: 20px;
   object-fit: contain;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
+/* ===== INFO ===== */
 .perfil-info {
   flex: 1;
   display: flex;
@@ -148,9 +149,9 @@ onMounted(async () => {
 
 .admin-info,
 .restaurante-info {
-  background: #fff;
+  background: var(--color-blanco);
   border-radius: 16px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--box-shadow);
   padding: 2rem 3rem;
   width: 100%;
 }
@@ -169,6 +170,7 @@ onMounted(async () => {
   color: #333;
 }
 
+/* ===== Stripe section ===== */
 .stripe-section {
   margin-top: 1rem;
   display: flex;
@@ -176,36 +178,39 @@ onMounted(async () => {
   gap: 1rem;
 }
 
-.stripe-section p {
-  margin: 0;
-}
-
-.stripe-btn {
-  padding: 0.6rem 1rem;
-  border-radius: 8px;
-  color: white;
-  font-weight: 500;
-  border: none;
+/* ===== Botones globales iguales a gestion-mesas ===== */
+.btn {
+  --_pad: 0.6rem 1rem;
+  padding: var(--_pad);
+  border-radius: 0.4rem;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition: transform 120ms ease, filter 120ms ease;
 }
 
-.stripe-btn.crear {
-  background-color: #28a745;
+.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
 }
 
-.stripe-btn.crear:hover {
-  background-color: #218838;
+.btn:active {
+  transform: translateY(0);
 }
 
-.stripe-btn.editar {
-  background-color: #635bff;
+.btn--primary {
+  background: linear-gradient(135deg, var(--color-azul-1), var(--color-primary-variant));
+  color: var(--color-blanco);
 }
 
-.stripe-btn.editar:hover {
-  background-color: #4b44cc;
+.btn--ghost {
+  background: linear-gradient(135deg, var(--color-azul-1), var(--color-primary-variant));
+  border-color: var(--color-info-luz);
+  color: var(--color-blanco);
 }
 
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
   .perfil-admin {
     flex-direction: column;
@@ -228,7 +233,22 @@ onMounted(async () => {
     max-width: 500px;
   }
 
-  .stripe-btn {
+  .admin-info h2,
+.restaurante-info h2 {
+  font-size: 1.1rem;
+}
+
+.admin-info p,
+.restaurante-info p {
+  font-size: 1rem;
+}
+
+  .stripe-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn {
     width: 100%;
     text-align: center;
   }

@@ -536,6 +536,7 @@ function onKeydown(e) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.2rem;
 }
 
 .card__title {
@@ -704,7 +705,7 @@ function onKeydown(e) {
 }
 
 .form__error {
-  color: var(--color-error, #d32f2f);
+  color: var(--color-rojo-5);
   font-size: .9rem;
   font-weight: 500;
   padding: .5rem;
@@ -738,8 +739,8 @@ function onKeydown(e) {
 }
 
 .chk input[type="checkbox"]:checked {
-  border-color: var(--color-azul-1);
-  background-color: var(--color-azul-1);
+  border-color: var(--color-aprobado-1);
+  background-color: var(--color-aprobado-1);
 }
 
 .chk input[type="checkbox"]:checked::before {

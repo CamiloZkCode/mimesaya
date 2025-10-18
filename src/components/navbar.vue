@@ -54,14 +54,6 @@
           >Gestionar Reservas</RouterLink
         >
       </li>
-      <li v-if="authStore.isAdmin">
-        <RouterLink
-          to="/admin/clientes"
-          class="nav-link"
-          exact-active-class="is-active"
-          >Gestionar Clientes</RouterLink
-        >
-      </li>
     </ul>
 
     <!-- Right -->
@@ -161,15 +153,6 @@
             exact-active-class="is-active"
             @click="closeMenu"
             >Gestionar Reservas</RouterLink
-          >
-        </li>
-        <li v-if="authStore.isAdmin">
-          <RouterLink
-            to="/admin/clientes"
-            class="side-link"
-            exact-active-class="is-active"
-            @click="closeMenu"
-            >Gestionar Clientes</RouterLink
           >
         </li>
       </ul>

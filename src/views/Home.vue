@@ -707,7 +707,6 @@ export default {
 
 .plan__media {
   display: none;
-  /* Oculta la imagen por defecto en móviles */
 }
 
 .plan__img {
