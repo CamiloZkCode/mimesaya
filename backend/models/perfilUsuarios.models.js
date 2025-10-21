@@ -23,6 +23,20 @@ const PerfilModel = {
     );
     return rows.length > 0 ? rows[0] : null;
   },
+
+  async obtenerPerfilCliente(id_usuario) {
+    const [rows] = await db.query(
+      `SELECT 
+    id_usuario,
+    nombre,
+    telefono,
+    correo
+    FROM usuarios
+    WHERE id_usuario = ? AND id_rol = 2`,
+      [id_usuario]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  },
 };
 
 module.exports = PerfilModel;

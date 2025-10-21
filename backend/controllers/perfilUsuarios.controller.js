@@ -64,6 +64,29 @@ const PerfilController = {
       res.status(500).json({ mensaje: "Error interno del servidor" });
     }
   },
+
+    async obtenerPerfilCliente(req, res) {
+    try {
+      const id_cliente = req.user.id_usuario;
+      const cliente = await PerfilModel.obtenerPerfilCliente(id_cliente);
+
+      if (!cliente) {
+        return res.status(404).json({ mensaje: "Perfil no encontrado" });
+      }
+
+      res.json({
+        cliente: {
+          id_usuario: cliente.id_usuario,
+          nombre: cliente.nombre,
+          telefono: cliente.telefono,
+          correo: cliente.correo,
+        },
+      });
+    } catch (error) {
+      console.error("Error al obtener perfil del cliente:", error);
+      res.status(500).json({ mensaje: "Error interno del servidor" });
+    }
+  },
 };
 
 module.exports = PerfilController;

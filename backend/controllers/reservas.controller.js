@@ -157,87 +157,115 @@ const ReservaController = {
     }
   },
 
-  // ===== HORARIOS DISPONIBLES =====
-  async obtenerHorariosDisponibles(req, res) {
-    try {
-      const { id_mesa, fecha, id_ocasion } = req.query;
-      if (!moment(fecha, "YYYY-MM-DD", true).isValid())
-        return res.status(400).json({ message: "Fecha inválida." });
+ // ===== HORARIOS DISPONIBLES =====
+async obtenerHorariosDisponibles(req, res) {
+  try {
+    const { id_mesa, fecha, id_ocasion } = req.query;
+    if (!moment(fecha, "YYYY-MM-DD", true).isValid())
+      return res.status(400).json({ message: "Fecha inválida." });
 
-      const mesa = await MesaModel.obtenerMesaPorId(id_mesa);
-      if (!mesa)
-        return res.status(404).json({ message: "Mesa no encontrada." });
+    const mesa = await MesaModel.obtenerMesaPorId(id_mesa);
+    if (!mesa)
+      return res.status(404).json({ message: "Mesa no encontrada." });
 
-      let ocasion;
-      if (id_ocasion) {
-        ocasion = await OcasionModel.obtenerOcasionPorId(id_ocasion);
-        if (!ocasion || ocasion.id_restaurante !== mesa.id_restaurante)
-          return res
-            .status(400)
-            .json({ message: "Ocasión inválida para este restaurante." });
-      } else {
-        const ocasiones = await OcasionModel.obtenerOcasionesPorRestaurante(
-          mesa.id_restaurante
-        );
-        ocasion = ocasiones.find(
-          (o) => o.nombre_ocasion === "Reserva General"
-        ) || {
-          id_ocasion: null,
-          nombre_ocasion: "Reserva General",
-          precio_ocasion: 700,
-          duracion_min_horas: 2,
-        };
-      }
-
-      const minHoras = ocasion.duracion_min_horas || 2;
-      const extraMin = 20 * mesa.capacidad;
-      const totalMin = minHoras * 60 + extraMin;
-      const duracionHoras = Math.ceil(totalMin / 60);
-
-      const reservas = await ReservaModel.obtenerReservasPorMesaYFecha(
-        id_mesa,
-        fecha
+    // ===== OBTENER OCASIÓN =====
+    let ocasion;
+    if (id_ocasion) {
+      ocasion = await OcasionModel.obtenerOcasionPorId(id_ocasion);
+      if (!ocasion || ocasion.id_restaurante !== mesa.id_restaurante)
+        return res
+          .status(400)
+          .json({ message: "Ocasión inválida para este restaurante." });
+    } else {
+      const ocasiones = await OcasionModel.obtenerOcasionesPorRestaurante(
+        mesa.id_restaurante
       );
-      const horariosBase = [
-        "12:00",
-        "13:00",
-        "14:00",
-        "15:00",
-        "16:00",
-        "17:00",
-        "18:00",
-        "19:00",
-        "20:00",
-        "21:00",
-      ];
-
-      const horariosOcupados = new Set();
-      reservas.forEach((reserva) => {
-        const inicio = moment.tz(reserva.fecha_inicio, "America/Bogota");
-        const fin = moment.tz(reserva.fecha_fin, "America/Bogota");
-        if (
-          reserva.estado_reserva === "finalizada" &&
-          fin.isBefore(fechaHoraActual())
-        )
-          return;
-
-        let current = inicio.clone();
-        while (current.isBefore(fin) || current.isSame(fin)) {
-          const hora = current.format("HH:00");
-          if (horariosBase.includes(hora)) horariosOcupados.add(hora);
-          current.add(duracionHoras, "hours");
-        }
-      });
-
-      const horariosDisponibles = horariosBase.filter(
-        (hora) => !horariosOcupados.has(hora)
-      );
-      res.json(horariosDisponibles);
-    } catch (err) {
-      console.error("Error al obtener horarios:", err);
-      res.status(500).json({ error: err.message });
+      ocasion = ocasiones.find(
+        (o) => o.nombre_ocasion === "Reserva General"
+      ) || {
+        id_ocasion: null,
+        nombre_ocasion: "Reserva General",
+        precio_ocasion: 700,
+        duracion_min_horas: 2,
+      };
     }
-  },
+
+    // ===== CALCULAR DURACIÓN =====
+    const minHoras = ocasion.duracion_min_horas || 2;
+    const extraMin = 20 * mesa.capacidad;
+    const totalMin = minHoras * 60 + extraMin;
+    const duracionHoras = Math.ceil(totalMin / 60);
+
+    // ===== OBTENER RESERVAS EXISTENTES =====
+    const reservas = await ReservaModel.obtenerReservasPorMesaYFecha(
+      id_mesa,
+      fecha
+    );
+
+    // ===== BASE DE HORARIOS =====
+    const horariosBase = [
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+      "18:00",
+      "19:00",
+      "20:00",
+    ];
+
+    // ===== CALCULAR HORAS OCUPADAS =====
+    const horariosOcupados = new Set();
+    const margenPrevioHoras = 1; // margen de preparación antes de la reserva
+    reservas.forEach((reserva) => {
+      const inicio = moment
+        .tz(reserva.fecha_inicio, "America/Bogota")
+        .subtract(margenPrevioHoras, "hours");
+      const fin = moment.tz(reserva.fecha_fin, "America/Bogota");
+
+      // Ignorar reservas finalizadas pasadas
+      if (
+        reserva.estado_reserva === "finalizada" &&
+        fin.isBefore(fechaHoraActual())
+      )
+        return;
+
+      let current = inicio.clone();
+      while (current.isBefore(fin)) {
+        const hora = current.format("HH:00");
+        if (horariosBase.includes(hora)) {
+          horariosOcupados.add(hora);
+        }
+        current.add(1, "hour");
+      }
+    });
+
+    // ===== ELIMINAR HORAS PASADAS SI ES HOY =====
+    const ahora = moment.tz("America/Bogota");
+    const fechaConsulta = moment.tz(fecha, "YYYY-MM-DD", "America/Bogota");
+
+    let horariosFiltrados = horariosBase;
+
+    if (fechaConsulta.isSame(ahora, "day")) {
+      const horaActual = ahora.hour(); // hora actual en formato 24h
+      horariosFiltrados = horariosBase.filter((hora) => {
+        const horaNum = parseInt(hora.split(":")[0]);
+        return horaNum > horaActual; // solo mostrar horas futuras
+      });
+    }
+
+    // ===== HORARIOS DISPONIBLES =====
+    const horariosDisponibles = horariosFiltrados.filter(
+      (hora) => !horariosOcupados.has(hora)
+    );
+
+    return res.json(horariosDisponibles);
+  } catch (err) {
+    console.error("Error al obtener horarios:", err);
+    return res.status(500).json({ error: err.message });
+  }
+},
 
   // ===== CONFIRMAR RESERVA =====
   async confirmarReserva(req, res) {
@@ -306,11 +334,11 @@ const ReservaController = {
 
   // ===== FACTURA =====
   async getFactura(req, res) {
-  try {
-    const { id } = req.params;
+    try {
+      const { id } = req.params;
 
-    const [rows] = await db.query(
-      `SELECT r.*, 
+      const [rows] = await db.query(
+        `SELECT r.*, 
             res.nombre_restaurante, 
             res.logo_restaurante,  -- agregamos el logo
             m.id_mesa AS id_mesa_reserva,
@@ -327,32 +355,196 @@ const ReservaController = {
        LEFT JOIN pagos p ON r.id_reserva = p.id_reserva AND p.estado = 'pagado'
        WHERE r.id_reserva = ?
        GROUP BY r.id_reserva`,
-      [id]
-    );
+        [id]
+      );
 
-    if (rows.length === 0)
-      return res.status(404).json({ message: "Reserva no encontrada." });
+      if (rows.length === 0)
+        return res.status(404).json({ message: "Reserva no encontrada." });
 
-    const reserva = rows[0];
-    const precioOcasion = parseInt(Number(reserva.precio_ocasion) || 0);
-    const comisionMiMesaYa = 1500;
-    const precioTotal = precioOcasion + comisionMiMesaYa;
+      const reserva = rows[0];
+      const precioOcasion = parseInt(Number(reserva.precio_ocasion) || 0);
+      const comisionMiMesaYa = 1500;
+      const precioTotal = precioOcasion + comisionMiMesaYa;
 
-    res.json({
-      ...reserva,
-      precio_ocasion: precioOcasion,
-      comisionMiMesaYa,
-      precio_total: precioTotal,
-      hora_reserva: reserva.hora_reserva,
-      id_mesa: reserva.id_mesa_reserva,
-      nombre_mesa: reserva.nombre_mesa,
-      logo_restaurante: reserva.logo_restaurante, // agregamos el logo al JSON
-    });
+      res.json({
+        ...reserva,
+        precio_ocasion: precioOcasion,
+        comisionMiMesaYa,
+        precio_total: precioTotal,
+        hora_reserva: reserva.hora_reserva,
+        id_mesa: reserva.id_mesa_reserva,
+        nombre_mesa: reserva.nombre_mesa,
+        logo_restaurante: reserva.logo_restaurante, // agregamos el logo al JSON
+      });
+    } catch (err) {
+      console.error("Error al obtener factura:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  async obtenerReservasCliente(req, res) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Usuario no autenticado" });
+    }
+
+    const id_usuario = req.user.id_usuario;
+
+    // Actualizar reservas finalizadas antes de consultar
+    await ReservaModel.actualizarReservasFinalizadas();
+
+    // Obtener las reservas del cliente desde el modelo
+    const reservas = await ReservaModel.obtenerReservasPorCliente(id_usuario);
+
+    // Formatear fechas si lo deseas (opcional, aquí puedes convertir a 12h o mantener 24h)
+    const reservasFormateadas = reservas.map((r) => ({
+      ...r,
+      fecha_inicio: moment(r.fecha_inicio).tz("America/Bogota").format("YYYY-MM-DD HH:mm"),
+      fecha_fin: moment(r.fecha_fin).tz("America/Bogota").format("YYYY-MM-DD HH:mm"),
+    }));
+
+    res.json(reservasFormateadas);
   } catch (err) {
-    console.error("Error al obtener factura:", err);
+    console.error("Error al obtener reservas del cliente:", err);
     res.status(500).json({ error: err.message });
   }
 },
+
+  async cancelarReserva(req, res) {
+    try {
+      const { id } = req.params;
+      const id_usuario = req.user.id_usuario;
+
+      const [rows] = await db.query(
+        `SELECT r.*, p.stripe_payment_id, p.monto, p.estado AS estado_pago 
+       FROM reserva r
+       LEFT JOIN pagos p ON r.id_reserva = p.id_reserva
+       WHERE r.id_reserva = ? AND r.id_usuario = ?`,
+        [id, id_usuario]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "Reserva no encontrada" });
+      }
+
+      const reserva = rows[0];
+
+      if (reserva.estado_reserva !== "activa") {
+        return res
+          .status(400)
+          .json({ message: "Solo puedes cancelar reservas activas" });
+      }
+
+      // Validar tiempo (mínimo 6 horas antes)
+      const ahora = moment().tz("America/Bogota");
+      const inicio = moment(reserva.fecha_inicio).tz("America/Bogota");
+      const diffHoras = inicio.diff(ahora, "hours");
+
+      if (diffHoras < 6) {
+        return res.status(400).json({
+          message:
+            "No puedes cancelar una reserva con menos de 6 horas de anticipación.",
+        });
+      }
+
+      // Reembolso con Stripe
+      if (reserva.stripe_payment_id && reserva.estado_pago === "pagado") {
+        await stripe.refunds.create({
+          payment_intent: reserva.stripe_payment_id,
+        });
+      }
+
+      // Actualizar estado en DB
+      await ReservaModel.actualizarEstadoReserva(
+        reserva.id_reserva,
+        "cancelada"
+      );
+
+      res.json({
+        message: "Reserva cancelada y reembolso procesado correctamente.",
+      });
+    } catch (err) {
+      console.error("Error al cancelar reserva:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+
+
+
+
+
+  //RESERVAS ADMINISTRADOR
+
+  // === Obtener reservas del restaurante (Administrador) ===
+async obtenerReservasRestauranteAdmin(req, res) {
+  try {
+    if (!req.user || req.user.id_rol !== 1) {
+      return res.status(403).json({ message: "Acceso no autorizado" });
+    }
+
+    const id_usuario_admin = req.user.id_usuario;
+    await ReservaModel.actualizarReservasFinalizadas();
+
+    const reservas = await ReservaModel.obtenerReservasPorRestauranteAdmin(id_usuario_admin);
+
+    const reservasFormateadas = reservas.map(r => ({
+      ...r,
+      fecha_inicio: moment(r.fecha_inicio).tz("America/Bogota").format("YYYY-MM-DD HH:mm"),
+      fecha_fin: moment(r.fecha_fin).tz("America/Bogota").format("YYYY-MM-DD HH:mm"),
+    }));
+
+    res.json(reservasFormateadas);
+  } catch (err) {
+    console.error("Error al obtener reservas del restaurante:", err);
+    res.status(500).json({ error: err.message });
+  }
+},
+
+// === Cancelar reserva (Administrador) ===
+async cancelarReservaPorAdmin(req, res) {
+  try {
+    if (!req.user || req.user.id_rol !== 1) {
+      return res.status(403).json({ message: "Acceso no autorizado" });
+    }
+
+    const id_reserva = req.params.id;
+    const id_usuario_admin = req.user.id_usuario;
+
+    const result = await ReservaModel.cancelarReservaPorAdmin(id_reserva, id_usuario_admin);
+    if (!result) {
+      return res.status(404).json({ message: "Reserva no encontrada o no pertenece a su restaurante" });
+    }
+
+    res.json({ message: "Reserva cancelada correctamente por el administrador." });
+  } catch (err) {
+    console.error("Error al cancelar reserva por admin:", err);
+    res.status(500).json({ error: err.message });
+  }
+},
+
+// === Finalizar reserva (Administrador) ===
+async finalizarReservaPorAdmin(req, res) {
+  try {
+    if (!req.user || req.user.id_rol !== 1) {
+      return res.status(403).json({ message: "Acceso no autorizado" });
+    }
+
+    const id_reserva = req.params.id;
+    const id_usuario_admin = req.user.id_usuario;
+
+    const result = await ReservaModel.finalizarReservaPorAdmin(id_reserva, id_usuario_admin);
+    if (!result) {
+      return res.status(404).json({ message: "Reserva no encontrada o no pertenece a su restaurante" });
+    }
+
+    res.json({ message: "Reserva finalizada correctamente por el administrador." });
+  } catch (err) {
+    console.error("Error al finalizar reserva por admin:", err);
+    res.status(500).json({ error: err.message });
+  }
+},
+
 };
 
 module.exports = ReservaController;

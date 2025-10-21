@@ -36,3 +36,54 @@ export async function obtenerFactura(id) {
     throw err.response?.data || { message: "Error al obtener la factura" };
   }
 }
+
+
+export async function CancelarReserva(id) {
+  try {
+    const res = await API.put(`/reservas/cancelar/${id}`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { message: "Error al cancelar la reserva" };
+  }
+}
+
+export async function obtenerReservasCliente() {
+  try {
+    const res = await API.get(`/reservas/mis-reservas`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { message: "Error al obtener las reservas" };
+
+  }
+}
+
+
+
+// === ADMINISTRADOR ===
+
+export async function obtenerReservasRestaurante() {
+  try {
+    const res = await API.get(`/reservas/reservas-restaurante`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { message: "Error al obtener las reservas del restaurante" };
+  }
+}
+
+export async function cancelarReservaAdmin(id) {
+  try {
+    const res = await API.put(`/reservas/admin/reservas/${id}/cancelar`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { message: "Error al cancelar la reserva del restaurante" };
+  }
+}
+
+export async function finalizarReservaAdmin(id) {
+  try {
+    const res = await API.put(`/reservas/admin/reservas/${id}/finalizar`);
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { message: "Error al finalizar la reserva del restaurante" };
+  }
+}

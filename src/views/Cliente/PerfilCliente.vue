@@ -4,9 +4,9 @@
     <section class="cliente-info">
       <div class="cliente-detalles">
         <h2>Perfil del Cliente</h2>
-        <p><strong>Nombre:</strong> Laura Martínez</p>
-        <p><strong>Correo:</strong> laura.martinez@example.com</p>
-        <p><strong>Teléfono:</strong> +57 312 987 6543</p>
+        <p><strong>Nombre:</strong> {{ cliente.nombre }}</p>
+        <p><strong>Correo:</strong> {{ cliente.correo }}</p>
+        <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
       </div>
     </section>
 
@@ -14,8 +14,12 @@
     <section class="reservas">
       <h2>Mis Reservas</h2>
 
-      <div class="tabla-scroll">
-        <table>
+      <div v-if="loading" class="estado-cargando">
+        <p>Cargando reservas...</p>
+      </div>
+
+      <div v-else class="tabla-scroll">
+        <table v-if="reservas.length > 0">
           <thead>
             <tr>
               <th>ID Reserva</th>
@@ -41,69 +45,118 @@
                 <span
                   class="estado"
                   :class="{
-                    pendiente: reserva.estado === 'Pendiente',
-                    confirmada: reserva.estado === 'Confirmada',
-                    cancelada: reserva.estado === 'Cancelada'
+                    pendiente: reserva.estado === 'pendiente_pago',
+                    activa: reserva.estado === 'activa',
+                    cancelada: reserva.estado === 'cancelada',
+                    finalizada: reserva.estado === 'finalizada'
                   }"
                 >
                   {{ reserva.estado }}
                 </span>
               </td>
               <td>
-                <button class="btn-cancelar" :disabled="reserva.estado === 'Cancelada'">
+                <button
+                  class="btn-cancelar"
+                  :disabled="reserva.estado !== 'activa'"
+                  @click="cancelar(reserva.id)"
+                >
                   Cancelar
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+        <p v-else class="sin-reservas">No tienes reservas registradas.</p>
       </div>
     </section>
   </main>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import Swal from "sweetalert2";
+import { obtenerPerfilCliente } from "@/services/perfil";
+import { obtenerReservasCliente, CancelarReserva } from "@/services/reservas";
 
-const reservas = ref([
-  {
-    id: "0012",
-    restaurante: "La Parrilla Gourmet",
-    mesa: "Mesa 4",
-    ocasion: "Cumpleaños",
-    fecha_inicio: "2025-10-20 18:00",
-    fecha_fin: "2025-10-20 20:00",
-    estado: "Pendiente",
-  },
-  {
-    id: "0013",
-    restaurante: "El Sabor del Mar",
-    mesa: "Mesa 2",
-    ocasion: "Cena Romántica",
-    fecha_inicio: "2025-09-28 19:00",
-    fecha_fin: "2025-09-28 21:00",
-    estado: "Confirmada",
-  },
-  {
-    id: "0014",
-    restaurante: "Café Central",
-    mesa: "Mesa 1",
-    ocasion: "Reunión",
-    fecha_inicio: "2025-09-10 10:00",
-    fecha_fin: "2025-09-10 11:30",
-    estado: "Cancelada",
-  },
-]);
+const cliente = ref({
+  nombre: "",
+  telefono: "",
+  correo: "",
+});
+const reservas = ref([]);
+const loading = ref(true);
 
 function formatearFecha(fechaString) {
   const fecha = new Date(fechaString);
   const opcionesFecha = { day: "2-digit", month: "2-digit", year: "numeric" };
-  const opcionesHora = { hour: "2-digit", minute: "2-digit", hour12: false };
-  const fechaFormateada = fecha.toLocaleDateString("es-ES", opcionesFecha);
-  const horaFormateada = fecha.toLocaleTimeString("es-ES", opcionesHora);
-  return `${fechaFormateada} - ${horaFormateada}`;
+  const opcionesHora = { hour: "2-digit", minute: "2-digit", hour12: true };
+  return `${fecha.toLocaleDateString("es-ES", opcionesFecha)} - ${fecha.toLocaleTimeString("es-ES", opcionesHora)}`;
 }
+
+async function cargarReservas() {
+  try {
+    const data = await obtenerReservasCliente();
+    reservas.value = data.map((r) => ({
+      id: r.id_reserva,
+      restaurante: r.nombre_restaurante,
+      mesa: r.nombre_mesa,
+      ocasion: r.nombre_ocasion,
+      fecha_inicio: r.fecha_inicio,
+      fecha_fin: r.fecha_fin,
+      estado: r.estado_reserva.toLowerCase(),
+    }));
+  } catch (error) {
+    console.error("Error al cargar reservas:", error);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function cancelar(id) {
+  const result = await Swal.fire({
+    title: "¿Cancelar reserva?",
+    text: "Se reembolsará el pago si aplica.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Sí, cancelar",
+    cancelButtonText: "No, mantener",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await CancelarReserva(id);
+      await Swal.fire({
+        icon: "success",
+        title: "Reserva cancelada",
+        text: "La reserva fue cancelada y el reembolso se procesó correctamente.",
+        confirmButtonColor: "#3085d6",
+      });
+      await cargarReservas();
+    } catch (error) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error al cancelar",
+        text: error.message || "No se pudo cancelar la reserva.",
+        confirmButtonColor: "#d33",
+      });
+    }
+  }
+}
+
+onMounted(async () => {
+  try {
+    const data = await obtenerPerfilCliente();
+    if (data?.cliente) cliente.value = data.cliente;
+  } catch (error) {
+    console.error("Error al cargar perfil:", error);
+  }
+
+  await cargarReservas();
+});
 </script>
+
 
 <style scoped>
 .perfil-cliente {
@@ -190,12 +243,16 @@ td {
   background-color: var(--color-naranja-3);
 }
 
-.estado.confirmada {
+.estado.activa {
   background-color: var(--color-aprobado-1);
 }
 
 .estado.cancelada {
   background-color: var(--color-rojo-5);
+}
+
+.estado.finalizada {
+  background-color: var(--color-azul-1);
 }
 
 .btn-cancelar {
@@ -211,7 +268,10 @@ td {
 }
 
 .btn-cancelar:hover:not(:disabled) {
-  background-color: var(--color-rojo-6);
+  background-color: var(--color-rojo-5);
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(183, 28, 28, 0.4);
+
 }
 
 .btn-cancelar:disabled {
