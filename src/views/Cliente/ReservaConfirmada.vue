@@ -6,12 +6,12 @@
       </div>
 
       <div v-else-if="error" class="estado error">
-        <h2>❌ Error</h2>
+        <h2>Error</h2>
         <p>{{ error }}</p>
         <RouterLink to="/" class="btn btn--primary mt-3">Volver al inicio</RouterLink>
       </div>
 
-      <div v-else class="factura-card">
+      <div v-else class="factura-card" id="facturaPDF">
         <!-- HEADER -->
         <header class="factura-header">
           <img :src="factura.logo_restaurante" alt="Logo Restaurante" class="logo" />
@@ -65,9 +65,17 @@
         <!-- FOOTER -->
         <footer class="factura-footer">
           <p>✅ Gracias por tu reserva. ¡Te esperamos!</p>
-          <RouterLink to="/perfil" class="btn btn--primary mt-2">
-            Ir a mis reservas
-          </RouterLink>
+
+          <!-- Botones visibles en la web, ocultos en PDF -->
+          <div class="botones-footer no-pdf">
+            <RouterLink to="/perfil" class="btn btn--primary mt-2">
+              Ir a mis reservas
+            </RouterLink>
+
+            <button @click="descargarPDF" class="btn btn--secondary mt-2">
+              Descargar PDF
+            </button>
+          </div>
         </footer>
       </div>
     </section>
@@ -78,6 +86,7 @@
 import { ref, onMounted } from "vue";
 import { useRoute, RouterLink } from "vue-router";
 import { confirmarReserva, obtenerFactura } from "@/services/reservas";
+import html2pdf from "html2pdf.js";
 
 const route = useRoute();
 const loading = ref(true);
@@ -120,9 +129,36 @@ function formatFecha(fecha) {
     day: "numeric",
   });
 }
+
+// 🧾 Generar PDF con diseño profesional solo en el PDF
+function descargarPDF() {
+  const element = document.getElementById("facturaPDF");
+  const botones = element.querySelectorAll(".no-pdf");
+
+  // Ocultar botones temporalmente
+  botones.forEach(btn => btn.style.display = "none");
+
+  // Aplicar clase PDF profesional
+  element.classList.add("pdf-profesional");
+
+  const opt = {
+    margin: 10,
+    filename: `Factura_${factura.value.id_reserva}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+  };
+
+  html2pdf().set(opt).from(element).save().finally(() => {
+    // Restaurar botones y quitar clase profesional
+    botones.forEach(btn => btn.style.display = "");
+    element.classList.remove("pdf-profesional");
+  });
+}
 </script>
 
 <style scoped>
+/* ================= WEB ================= */
 .factura-confirmada {
   display: flex;
   justify-content: center;
@@ -137,7 +173,7 @@ function formatFecha(fecha) {
 }
 
 .factura-card {
-  background: var(--color-blanco);
+  background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -155,12 +191,12 @@ function formatFecha(fecha) {
 }
 
 .factura-header .logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain; 
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
   border-radius: 8px;
-  background: #f5f5f5; 
-  padding: 5px;         
+  background: #fafafa;
+  padding: 5px;
 }
 
 .datos-reserva {
@@ -198,18 +234,34 @@ function formatFecha(fecha) {
   padding-top: 1rem;
 }
 
+.botones-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
 .btn {
   display: inline-block;
   padding: 0.8rem 1.2rem;
-  background: var(--color-azul-1);
-  color: #fff;
   border-radius: 8px;
   text-decoration: none;
   transition: background 0.2s;
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: var(--color-azul-1);
+  color: #fff;
+}
+
+.btn--secondary {
+  background: #444;
+  color: #fff;
 }
 
 .btn:hover {
-  background: var(--color-azul-1);
+  opacity: 0.9;
 }
 
 .estado {
@@ -220,5 +272,83 @@ function formatFecha(fecha) {
 
 .estado.error {
   color: var(--color-rojo-5);
+}
+
+/* ================= PDF PROFESIONAL ================= */
+.pdf-profesional {
+  font-family: 'Helvetica', 'Arial', sans-serif;
+  color: #333;
+}
+
+.pdf-profesional .factura-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #1a1a1a;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pdf-profesional .factura-header .logo {
+  width: 100px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+}
+
+.pdf-profesional h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #1a1a1a;
+}
+
+.pdf-profesional p {
+  margin: 2px 0;
+  color: #555;
+}
+
+.pdf-profesional .datos-reserva {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.pdf-profesional .tabla-precios table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.pdf-profesional .tabla-precios th,
+.pdf-profesional .tabla-precios td {
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.pdf-profesional .tabla-precios th {
+  background: #f0f0f0;
+  text-align: left;
+}
+
+.pdf-profesional .tabla-precios tfoot th,
+.pdf-profesional .tabla-precios tfoot td {
+  font-weight: bold;
+  font-size: 16px;
+  background: #e8f0ff;
+}
+
+.pdf-profesional .text-right {
+  text-align: right;
+}
+
+.pdf-profesional .factura-footer {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 14px;
+  color: #555;
+  border-top: 2px solid #1a1a1a;
+  padding-top: 1rem;
 }
 </style>
