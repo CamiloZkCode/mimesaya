@@ -5,7 +5,6 @@ require("dotenv").config();
 process.env.TZ = "America/Bogota";
 const moment = require("moment-timezone");
 
-
 const authRoutes = require("./routes/auth.routes");
 const ambientesRoutes = require("./routes/ambientes.routes");
 const contactoRoutes = require('./routes/contacto.routes');
@@ -15,10 +14,10 @@ const reservarRoutes = require('./routes/reservas.routes');
 const ocasionRoutes = require('./routes/ocasion.routes');
 const perfilUsuarios = require('./routes/perfilUsuarios.routes');
 
-
 const app = express();
 app.use(cors());
 
+// ✅ Webhook de Stripe (debe ir antes del body-parser normal)
 app.post(
   "/api/reservas/webhook-stripe",
   express.raw({ type: "application/json" }),
@@ -27,17 +26,20 @@ app.post(
 
 app.use(express.json());
 
-
+// Rutas principales
 app.use("/api/auth", authRoutes);
 app.use("/api/ambientes", ambientesRoutes);
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/restaurantes', RestauranteRoutes);
 app.use('/api/mesas', MesaRoutes);
-app.use('/api/reservas',reservarRoutes );
-app.use('/api/ocasion',ocasionRoutes );
-app.use('/api/perfil',perfilUsuarios);
+app.use('/api/reservas', reservarRoutes);
+app.use('/api/ocasion', ocasionRoutes);
+app.use('/api/perfil', perfilUsuarios);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Servidor corriendo en ${PORT}`);
 });
+
+// Iniciar el job que cancela reservas pendientes
+require("./jobs/cancelarPendientes");

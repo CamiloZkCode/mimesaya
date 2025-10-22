@@ -51,11 +51,22 @@
                     finalizada: reserva.estado === 'finalizada'
                   }"
                 >
-                  {{ reserva.estado }}
+                  {{ formatearEstado(reserva.estado) }}
                 </span>
               </td>
               <td>
+                <!-- Si está pendiente, botón de continuar pago -->
                 <button
+                  v-if="reserva.estado === 'pendiente_pago'"
+                  class="btn-pagar"
+                  @click="continuarPago(reserva.link_pago)"
+                >
+                  Continuar pago
+                </button>
+
+                <!-- Si está activa, botón de cancelar -->
+                <button
+                  v-else
                   class="btn-cancelar"
                   :disabled="reserva.estado !== 'activa'"
                   @click="cancelar(reserva.id)"
@@ -66,6 +77,7 @@
             </tr>
           </tbody>
         </table>
+
         <p v-else class="sin-reservas">No tienes reservas registradas.</p>
       </div>
     </section>
@@ -93,6 +105,21 @@ function formatearFecha(fechaString) {
   return `${fecha.toLocaleDateString("es-ES", opcionesFecha)} - ${fecha.toLocaleTimeString("es-ES", opcionesHora)}`;
 }
 
+function formatearEstado(estado) {
+  switch (estado) {
+    case "pendiente_pago":
+      return "Pendiente";
+    case "activa":
+      return "Activa";
+    case "cancelada":
+      return "Cancelada";
+    case "finalizada":
+      return "Finalizada";
+    default:
+      return estado;
+  }
+}
+
 async function cargarReservas() {
   try {
     const data = await obtenerReservasCliente();
@@ -104,6 +131,7 @@ async function cargarReservas() {
       fecha_inicio: r.fecha_inicio,
       fecha_fin: r.fecha_fin,
       estado: r.estado_reserva.toLowerCase(),
+      link_pago: r.link_pago, // 👈 enlace para continuar el pago
     }));
   } catch (error) {
     console.error("Error al cargar reservas:", error);
@@ -145,6 +173,20 @@ async function cancelar(id) {
   }
 }
 
+// 🔗 función para continuar pago
+function continuarPago(link) {
+  if (!link) {
+    Swal.fire({
+      icon: "warning",
+      title: "Link no disponible",
+      text: "Esta reserva no tiene un enlace de pago activo.",
+      confirmButtonColor: "#3085d6",
+    });
+    return;
+  }
+  window.open(link, "_blank");
+}
+
 onMounted(async () => {
   try {
     const data = await obtenerPerfilCliente();
@@ -156,7 +198,6 @@ onMounted(async () => {
   await cargarReservas();
 });
 </script>
-
 
 <style scoped>
 .perfil-cliente {
@@ -184,6 +225,7 @@ onMounted(async () => {
   margin-bottom: 1rem;
   color: var(--color-oscuro);
 }
+
 .cliente-detalles p {
   font-size: 1.1rem;
   margin-bottom: 0.6rem;
@@ -271,12 +313,30 @@ td {
   background-color: var(--color-rojo-5);
   transform: scale(1.05);
   box-shadow: 0 4px 10px rgba(183, 28, 28, 0.4);
-
 }
 
 .btn-cancelar:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+/* ===== BOTÓN PAGAR ===== */
+.btn-pagar {
+  background-color: var(--color-azul-1);
+  color: var(--color-blanco);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  font-weight: 600;
+}
+
+.btn-pagar:hover {
+  background-color: var(--color-azul-1);
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 91, 187, 0.4);
 }
 
 /* ===== Responsive ===== */

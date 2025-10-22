@@ -6,8 +6,8 @@ const ReservaModel = {
   async crearReserva(data) {
     const [result] = await db.query(
       `INSERT INTO reserva 
-        (id_usuario, id_restaurante, id_mesa, id_ocasion, fecha_inicio, fecha_fin, notas, estado_reserva)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id_usuario, id_restaurante, id_mesa, id_ocasion, fecha_inicio, fecha_fin, notas, estado_reserva, link_pago)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.id_usuario || null,
         data.id_restaurante,
@@ -17,9 +17,18 @@ const ReservaModel = {
         data.fecha_fin,
         data.notas || null,
         data.estado_reserva || "pendiente_pago",
+        data.link_pago || null,
       ]
     );
     return result.insertId;
+  },
+
+  async guardarLinkPago(id_reserva, link_pago) {
+    await db.query(
+      `UPDATE reserva SET link_pago = ? WHERE id_reserva = ?`,
+      [link_pago, id_reserva]
+    );
+    return true;
   },
 
   async obtenerReservasPorMesaYFecha(id_mesa, fecha) {
@@ -57,7 +66,7 @@ const ReservaModel = {
         fecha_fin,
       ]
     );
-    return rows.length === 0; // True si no hay conflictos
+    return rows.length === 0;
   },
 
   async actualizarEstadoReserva(id_reserva, nuevo_estado) {
@@ -96,7 +105,6 @@ const ReservaModel = {
     );
   },
 
-  // === Obtener reservas de un cliente ===
   async obtenerReservasPorCliente(id_usuario) {
     const query = `
     SELECT 
@@ -106,7 +114,8 @@ const ReservaModel = {
       o.nombre_ocasion,
       r.fecha_inicio,
       r.fecha_fin,
-      r.estado_reserva
+      r.estado_reserva,
+      r.link_pago
     FROM reserva r
     LEFT JOIN restaurantes res ON r.id_restaurante = res.id_restaurante
     LEFT JOIN mesa m ON r.id_mesa = m.id_mesa
@@ -119,14 +128,12 @@ const ReservaModel = {
       END,
       r.id_reserva DESC
   `;
-
     const [rows] = await db.query(query, [id_usuario]);
     return rows;
   },
 
-  // === Obtener reservas del restaurante del administrador ===
   async obtenerReservasPorRestauranteAdmin(id_usuario_admin) {
-  const query = `
+    const query = `
     SELECT 
       r.id_reserva,
       u.nombre AS nombre_cliente,
@@ -135,7 +142,8 @@ const ReservaModel = {
       o.nombre_ocasion,
       r.fecha_inicio,
       r.fecha_fin,
-      r.estado_reserva
+      r.estado_reserva,
+      r.link_pago
     FROM reserva r
     INNER JOIN restaurantes res ON r.id_restaurante = res.id_restaurante
     INNER JOIN usuarios u ON r.id_usuario = u.id_usuario
@@ -151,21 +159,19 @@ const ReservaModel = {
       END,
       r.id_reserva DESC
   `;
-  const [rows] = await db.query(query, [id_usuario_admin]);
-  return rows;
-},
+    const [rows] = await db.query(query, [id_usuario_admin]);
+    return rows;
+  },
 
-  // === Cancelar reserva (por administrador del restaurante) ===
   async cancelarReservaPorAdmin(id_reserva, id_usuario_admin) {
     const [rows] = await db.query(
       `SELECT r.id_reserva, r.estado_reserva
-     FROM reserva r
-     INNER JOIN restaurantes res ON r.id_restaurante = res.id_restaurante
-     WHERE r.id_reserva = ? AND res.id_admin = ?`,
+       FROM reserva r
+       INNER JOIN restaurantes res ON r.id_restaurante = res.id_restaurante
+       WHERE r.id_reserva = ? AND res.id_admin = ?`,
       [id_reserva, id_usuario_admin]
     );
-
-    if (rows.length === 0) return null; // no pertenece al restaurante del admin
+    if (rows.length === 0) return null;
     await db.query(
       `UPDATE reserva SET estado_reserva = 'cancelada' WHERE id_reserva = ?`,
       [id_reserva]
@@ -173,22 +179,46 @@ const ReservaModel = {
     return true;
   },
 
-  // === Finalizar reserva (por administrador del restaurante) ===
   async finalizarReservaPorAdmin(id_reserva, id_usuario_admin) {
     const [rows] = await db.query(
       `SELECT r.id_reserva, r.estado_reserva
-     FROM reserva r
-     INNER JOIN restaurantes res ON r.id_restaurante = res.id_restaurante
-     WHERE r.id_reserva = ? AND res.id_admin = ?`,
+       FROM reserva r
+       INNER JOIN restaurantes res ON r.id_restaurante = res.id_restaurante
+       WHERE r.id_reserva = ? AND res.id_admin = ?`,
       [id_reserva, id_usuario_admin]
     );
-
-    if (rows.length === 0) return null; // no pertenece al restaurante del admin
+    if (rows.length === 0) return null;
     await db.query(
       `UPDATE reserva SET estado_reserva = 'finalizada' WHERE id_reserva = ?`,
       [id_reserva]
     );
     return true;
+  },
+
+
+   // === NUEVO: obtener reservas pendientes ===
+  async obtenerReservasPendientes() {
+    const [rows] = await db.query(
+      "SELECT id_reserva, fecha_creacion FROM reserva WHERE estado_reserva = 'pendiente_pago'"
+    );
+    return rows;
+  },
+
+  // === NUEVO: cancelar reservas automáticamente ===
+  async cancelarReservasVencidas() {
+    const [rows] = await db.query(
+      "SELECT id_reserva FROM reserva WHERE estado_reserva = 'pendiente_pago' AND TIMESTAMPDIFF(MINUTE, fecha_creacion, NOW()) >= 5"
+    );
+
+    if (rows.length > 0) {
+      const ids = rows.map((r) => r.id_reserva);
+      await db.query(
+        `UPDATE reserva SET estado_reserva = 'cancelada' WHERE id_reserva IN (${ids.join(
+          ","
+        )})`
+      );
+      console.log(`${rows.length} reservas canceladas automáticamente.`);
+    }
   },
 };
 
